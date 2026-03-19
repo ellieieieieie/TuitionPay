@@ -1,0 +1,20 @@
+{
+  "name": "tuition-dapp",
+  "version": "1.0.0",
+  "description": "BAC2002 Blockchain Tuition Payment DApp",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "deploy:local": "npx hardhat run scripts/deploy.js",
+    "deploy:amoy": "npx hardhat run scripts/deploy.js --network amoy"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "dotenv": "^16.3.1",
+    "hardhat": "^2.19.0"
+  }
+}
