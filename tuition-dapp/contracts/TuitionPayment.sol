@@ -56,6 +56,15 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     ///         Keeps plaintext student IDs off-chain only.
     mapping(bytes32 => address) public studentHashToWallet;
 
+    /// @notice Reverse lookup: wallet address -> student hash
+    ///         Required for cleanup when removing a student.
+    mapping(address => bytes32) public walletToStudentHash;
+
+    /// @notice Tracks whether a student's tuition has been paid for the
+    ///         current semester. Set to true inside executePayment(),
+    ///         reset by admin at the start of each new semester.
+    mapping(address => bool) public paymentCompleted;
+
     // ========================
     // CONSTANTS / BOUNDS
     // ========================
@@ -68,6 +77,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     // EVENTS
     // ========================
     event StudentWhitelisted(address indexed student, bytes32 indexed studentHash);
+    event StudentRemoved(address indexed student, bytes32 indexed studentHash);
     event CreditUnitsSet(address indexed student, uint256 units);
     event Deposit(address indexed student, uint256 amount);
     event PaymentExecuted(
@@ -78,6 +88,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     );
     event InsufficientBalance(address indexed student, uint256 required, uint256 actual);
     event PaymentDateSet(uint256 date);
+    event PaymentStatusReset(address indexed student);
     event EmergencyWithdrawal(address indexed student, uint256 amount);
     event UniversityWalletUpdated(address indexed oldWallet, address indexed newWallet);
     event FeePerUnitUpdated(uint256 oldFee, uint256 newFee);
@@ -157,8 +168,89 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
 
         _grantRole(STUDENT_ROLE, student);
         studentHashToWallet[studentHash] = student;
+        walletToStudentHash[student] = studentHash;
 
         emit StudentWhitelisted(student, studentHash);
+    }
+
+    /**
+     * @notice Batch-whitelist multiple students in a single transaction.
+     *         Replicates the same validation logic as whitelistStudent()
+     *         for each entry — zero-address and zero-hash checks included.
+     *
+     * @dev    Gas savings: pays the 21 000 base transaction gas only once
+     *         instead of once per student. Uses calldata arrays (cheaper
+     *         than memory) and unchecked loop increment. Bounded by
+     *         MAX_BATCH_SIZE to prevent out-of-gas on large arrays.
+     *
+     * @param students      Array of student wallet addresses
+     * @param studentHashes Parallel array of keccak256-hashed student IDs
+     */
+    function batchWhitelist(
+        address[] calldata students,
+        bytes32[] calldata studentHashes
+    )
+        external
+        onlyRole(ADMIN_ROLE)
+    {
+        require(students.length == studentHashes.length, "Array length mismatch");
+        require(students.length > 0, "Empty student array");
+        require(students.length <= MAX_BATCH_SIZE, "Batch too large");
+
+        for (uint256 i = 0; i < students.length; ) {
+            address student = students[i];
+            bytes32 studentHash = studentHashes[i];
+
+            // Same validation as whitelistStudent() — no silent skips
+            require(student != address(0), "Invalid student address");
+            require(studentHash != bytes32(0), "Invalid student hash");
+            require(
+                studentHashToWallet[studentHash] == address(0),
+                "Student hash already registered"
+            );
+
+            _grantRole(STUDENT_ROLE, student);
+            studentHashToWallet[studentHash] = student;
+            walletToStudentHash[student] = studentHash;
+
+            emit StudentWhitelisted(student, studentHash);
+
+            unchecked { ++i; }
+        }
+    }
+
+    /**
+     * @notice Remove a student from the system entirely.
+     *         Revokes STUDENT_ROLE, clears credit units, clears the
+     *         hash-to-wallet mapping, and resets payment status.
+     *
+     * @dev    Does NOT refund escrowed USDC — admin should ensure
+     *         the student has withdrawn or been refunded before removal.
+     *         The escrow balance is left intact so it can be returned
+     *         via emergencyWithdraw (pause then let them claim) or
+     *         cleared separately by the admin in a future version.
+     *
+     * @param student Wallet address of the student to remove
+     */
+    function removeStudent(address student)
+        external
+        onlyRole(ADMIN_ROLE)
+    {
+        require(hasRole(STUDENT_ROLE, student), "Student not whitelisted");
+
+        // Retrieve and clear the hash mapping (both directions)
+        bytes32 studentHash = walletToStudentHash[student];
+        if (studentHash != bytes32(0)) {
+            delete studentHashToWallet[studentHash];
+            delete walletToStudentHash[student];
+        }
+
+        // Revoke role, clear semester-specific data
+        _revokeRole(STUDENT_ROLE, student);
+        delete creditUnits[student];
+        delete paymentCompleted[student];
+
+        emit StudentRemoved(student, studentHash);
     }
 
     /**
@@ -244,6 +336,49 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     }
 
     /**
+     * @notice Reset a single student's payment status for a new semester.
+     *         Allows the student to go through the deposit → pay cycle again.
+     *
+     * @param student Address of the student to reset
+     */
+    function resetPaymentStatus(address student)
+        external
+        onlyRole(ADMIN_ROLE)
+    {
+        require(hasRole(STUDENT_ROLE, student), "Student not whitelisted");
+        require(paymentCompleted[student], "Payment not yet completed");
+
+        paymentCompleted[student] = false;
+        emit PaymentStatusReset(student);
+    }
+
+    /**
+     * @notice Batch-reset payment status for multiple students at the
+     *         start of a new semester. Silently skips students who have
+     *         not paid (idempotent — safe to call with the full roster).
+     *
+     * @dev    Bounded by MAX_BATCH_SIZE. Uses unchecked increment.
+     *
+     * @param students Array of student addresses to reset
+     */
+    function batchResetPayments(address[] calldata students)
+        external
+        onlyRole(ADMIN_ROLE)
+    {
+        require(students.length > 0, "Empty student array");
+        require(students.length <= MAX_BATCH_SIZE, "Batch too large");
+
+        for (uint256 i = 0; i < students.length; ) {
+            if (paymentCompleted[students[i]]) {
+                paymentCompleted[students[i]] = false;
+                emit PaymentStatusReset(students[i]);
+            }
+
+            unchecked { ++i; }
+        }
+    }
+
+    /**
      * @notice Execute batch payment for an array of students.
      *         Follows CEI (Checks-Effects-Interactions) per student.
      *
@@ -279,9 +414,10 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
             uint256 required = creditUnits[student] * _feePerUnit;
             uint256 balance  = escrowBalance[student];
 
-            if (balance >= required) {
+            if (balance >= required && !paymentCompleted[student]) {
                 // --- Effect (before interaction) ---
                 escrowBalance[student] = balance - required;
+                paymentCompleted[student] = true;
 
                 // --- Interaction ---
                 require(
@@ -290,6 +426,8 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
                 );
 
                 emit PaymentExecuted(student, required, fxRate, block.timestamp);
+            } else if (paymentCompleted[student]) {
+                // Already paid this semester — skip silently
             } else {
                 emit InsufficientBalance(student, required, balance);
             }
@@ -362,6 +500,49 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
      */
     function checkSufficient(address student) external view returns (bool) {
         return escrowBalance[student] >= calculateFees(student);
+    }
+
+    /**
+     * @notice Return a student's combined status in a single call.
+     *         Designed for frontend consumption — avoids multiple RPC
+     *         round-trips to determine the student's lifecycle stage.
+     *
+     * @dev    View function — zero gas cost when called off-chain.
+     *         Returns four values so the frontend can derive any
+     *         combination of UI states without additional calls.
+     *
+     * @param student         Address of the student to query
+     * @return isWhitelisted  True if the student holds STUDENT_ROLE
+     * @return isDeposited    True if escrow balance >= total fees owed
+     * @return isPaid         True if payment has been executed this semester
+     * @return balance        Current escrow balance (USDC, 6 decimals)
+     */
+    function getStatus(address student)
+        external
+        view
+        returns (
+            bool isWhitelisted,
+            bool isDeposited,
+            bool isPaid,
+            uint256 balance
+        )
+    {
+        isWhitelisted = hasRole(STUDENT_ROLE, student);
+        balance = escrowBalance[student];
+        isDeposited = isWhitelisted && balance >= calculateFees(student);
+        isPaid = paymentCompleted[student];
+    }
+
+    /**
+     * @notice Return the total USDC held in this contract's escrow.
+     *         Useful for admin dashboards to see aggregate escrow value.
+     *
+     * @dev    Queries the USDC ERC-20 balance (not native MATIC).
+     *
+     * @return Total USDC balance held by this contract (6 decimals)
+     */
+    function getContractBalance() external view returns (uint256) {
+        return usdc.balanceOf(address(this));
     }
 
     /**
