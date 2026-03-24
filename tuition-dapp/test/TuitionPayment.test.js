@@ -4,12 +4,15 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("TuitionPayment — Student Payment Flow", function () {
   // ── Shared state ──
-  let tuition, usdc;
+  let tuition, usdc, priceFeed;
   let admin, student1, student2, universityWallet, outsider;
 
   // 1 USDC = 1_000_000 (6 decimals)
   const USDC = (n) => ethers.parseUnits(n.toString(), 6);
   const FEE_PER_UNIT = USDC(500); // $500 per credit unit
+
+  // SGD/USD rate: 0.75 expressed with 8 decimals (Chainlink convention)
+  const SGD_USD_RATE = 75000000n;
 
   // ── Deploy fresh contracts before each test ──
   beforeEach(async function () {
@@ -21,13 +24,19 @@ describe("TuitionPayment — Student Payment Flow", function () {
     usdc = await MockUSDC.deploy();
     await usdc.waitForDeployment();
 
-    // Deploy TuitionPayment
+    // Deploy MockPriceFeed (SGD/USD = 0.75, 8 decimals)
+    const MockPriceFeed = await ethers.getContractFactory("MockPriceFeed");
+    priceFeed = await MockPriceFeed.deploy(SGD_USD_RATE, 8);
+    await priceFeed.waitForDeployment();
+
+    // Deploy TuitionPayment (now with all 5 constructor args)
     const TuitionPayment = await ethers.getContractFactory("TuitionPayment");
     tuition = await TuitionPayment.deploy(
       await usdc.getAddress(),
       admin.address,
       universityWallet.address,
-      FEE_PER_UNIT
+      FEE_PER_UNIT,
+      await priceFeed.getAddress()
     );
     await tuition.waitForDeployment();
 
@@ -276,7 +285,7 @@ describe("TuitionPayment — Student Payment Flow", function () {
 
       expect(await tuition.checkSufficient(student2.address)).to.equal(true);
 
-      // Admin sets payment date to 1 second from now
+      // Admin sets payment date to 1 minute from now
       const now = await time.latest();
       await tuition.connect(admin).setPaymentDate(now + 60);
 
