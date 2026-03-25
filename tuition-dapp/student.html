@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TuitionPay — Admin Console</title>
+  <title>TuitionPay — Student Portal</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -233,6 +233,7 @@
 
     .stat-card .value.green { color: var(--green); }
     .stat-card .value.amber { color: var(--amber); }
+    .stat-card .value.accent { color: var(--accent); }
 
     /* ── Sections ── */
     .section {
@@ -312,8 +313,7 @@
       letter-spacing: 0.3px;
     }
 
-    .form-group input,
-    .form-group select {
+    .form-group input {
       padding: 0.6rem 0.8rem;
       border-radius: 7px;
       border: 1px solid var(--border);
@@ -325,8 +325,7 @@
       transition: border-color 0.2s;
     }
 
-    .form-group input:focus,
-    .form-group select:focus {
+    .form-group input:focus {
       border-color: var(--accent);
     }
 
@@ -366,48 +365,51 @@
       background: #dc2626;
     }
 
-    /* ── Student Table ── */
-    .table-wrap {
-      overflow-x: auto;
+    .btn-secondary {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      border-color: var(--accent);
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    /* ── Info Rows ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1rem;
     }
 
-    th {
-      text-align: left;
-      font-size: 0.7rem;
+    .info-item {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+    }
+
+    .info-item .info-label {
+      font-size: 0.72rem;
       color: var(--text-mute);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 600;
-      padding: 0.6rem 1rem;
-      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.4px;
+      font-weight: 500;
+      margin-bottom: 0.3rem;
     }
 
-    td {
-      padding: 0.75rem 1rem;
-      font-size: 0.85rem;
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle;
-    }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    tr:hover td {
-      background: var(--surface-2);
-    }
-
-    .addr {
+    .info-item .info-value {
       font-family: var(--mono);
-      font-size: 0.78rem;
-      color: var(--text-dim);
+      font-size: 1rem;
+      font-weight: 500;
     }
 
+    .info-item .info-value.green { color: var(--green); }
+    .info-item .info-value.amber { color: var(--amber); }
+    .info-item .info-value.red   { color: var(--red); }
+    .info-item .info-value.accent { color: var(--accent); }
+
+    /* ── Badge ── */
     .badge {
       display: inline-block;
       padding: 0.15rem 0.55rem;
@@ -434,6 +436,45 @@
       background: var(--red-bg);
       color: var(--red);
       border: 1px solid #7f1d1d;
+    }
+
+    .badge-blue {
+      background: #0f2044;
+      color: var(--accent);
+      border: 1px solid #1e3a6e;
+    }
+
+    /* ── Status Bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .status-bar .status-text {
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+
+    /* ── Note ── */
+    .note {
+      font-size: 0.8rem;
+      color: var(--text-mute);
+      padding: 0.7rem 0.9rem;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      margin-top: 0.75rem;
+      line-height: 1.5;
+    }
+
+    .note strong {
+      color: var(--text-dim);
     }
 
     .mono { font-family: var(--mono); }
@@ -482,23 +523,17 @@
       to   { transform: translateX(0); opacity: 1; }
     }
 
-    /* ── Checkbox ── */
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .checkbox-row input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--accent);
-      cursor: pointer;
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1rem 0;
     }
 
     /* ── Responsive ── */
     @media (max-width: 640px) {
       .stats { grid-template-columns: 1fr; }
+      .info-grid { grid-template-columns: 1fr; }
       .form-row { flex-direction: column; }
       .header { flex-direction: column; gap: 1rem; align-items: flex-start; }
     }
@@ -511,7 +546,7 @@
     <header class="header">
       <div class="logo">
         <div class="logo-icon">TP</div>
-        <h1>TuitionPay <span>Admin</span></h1>
+        <h1>TuitionPay <span>Student</span></h1>
       </div>
       <button class="btn-connect" id="btnConnect" onclick="connectWallet()">
         <span class="dot"></span>
@@ -521,9 +556,9 @@
 
     <!-- ── Login Screen ── -->
     <div class="login-screen" id="loginScreen">
-      <div class="shield">🔐</div>
-      <h2>Admin Console</h2>
-      <p>Connect your wallet to access the tuition payment management system. Only the admin wallet can interact with these controls.</p>
+      <div class="shield">🎓</div>
+      <h2>Student Portal</h2>
+      <p>Connect your MetaMask wallet to view your tuition fee statement and deposit USDC into escrow.</p>
       <button class="btn-login" onclick="connectWallet()">Connect with MetaMask</button>
     </div>
 
@@ -533,134 +568,159 @@
       <!-- Stats -->
       <div class="stats">
         <div class="stat-card">
-          <div class="label">Fee Per Credit Unit</div>
-          <div class="value" id="statFee">—</div>
+          <div class="label">Credit Units</div>
+          <div class="value accent" id="statCU">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Fees Owed</div>
+          <div class="value" id="statFees">—</div>
         </div>
         <div class="stat-card">
           <div class="label">Payment Date</div>
           <div class="value amber" id="statDate">Not set</div>
         </div>
-        <div class="stat-card">
-          <div class="label">Contract USDC</div>
-          <div class="value green" id="statBalance">—</div>
-        </div>
       </div>
 
-      <!-- Section 1: Whitelist Student -->
-      <div class="section open" id="secWhitelist">
-        <div class="section-header" onclick="toggleSection('secWhitelist')">
-          <h3>📋 Whitelist Student</h3>
+      <!-- Section 1: Fee Statement -->
+      <div class="section open" id="secStatement">
+        <div class="section-header" onclick="toggleSection('secStatement')">
+          <h3>📄 Fee Statement</h3>
           <span class="chevron">▼</span>
         </div>
         <div class="section-body">
           <div class="section-content">
+
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Escrow Balance</div>
+                <div class="info-value green" id="infoEscrow">—</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Fees Owed</div>
+                <div class="info-value" id="infoOwed">—</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Deposit Status</div>
+                <div class="info-value" id="infoDepositStatus">—</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Payment Status</div>
+                <div class="info-value" id="infoPayStatus">—</div>
+              </div>
+            </div>
+
+            <div id="shortfallRow" style="display:none;" class="note">
+              <strong>Shortfall:</strong> You still need to deposit
+              <span id="shortfallAmount" class="mono" style="color:var(--amber);">—</span>
+              USDC to meet your required fees.
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; margin-top:0.75rem;">
+              <button class="btn btn-secondary" onclick="refreshDashboard()">↻ Refresh</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: FX Rate -->
+      <div class="section open" id="secFX">
+        <div class="section-header" onclick="toggleSection('secFX')">
+          <h3>💱 FX Rate (JPY)</h3>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="section-body">
+          <div class="section-content">
+
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Locked Semester Rate</div>
+                <div class="info-value accent" id="infoLockedRate">—</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Your Fees in JPY</div>
+                <div class="info-value" id="infoJPY">—</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Live Chainlink Rate</div>
+                <div class="info-value" id="infoLiveRate">—</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Rate Last Updated</div>
+                <div class="info-value" id="infoRateAge" style="font-size:0.82rem;">—</div>
+              </div>
+            </div>
+
+            <div class="note">
+              <strong>Note:</strong> Your fee is billed in USDC at the <strong>locked semester rate</strong>.
+              The live rate is shown for reference only. Acquire USDC off-chain via an exchange
+              (e.g. Coinbase, Binance) by converting your local currency, then deposit below.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Deposit USDC -->
+      <div class="section open" id="secDeposit">
+        <div class="section-header" onclick="toggleSection('secDeposit')">
+          <h3>💰 Deposit USDC</h3>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="section-body">
+          <div class="section-content">
+
+            <div style="margin-bottom:1rem; font-size:0.85rem; color:var(--text-dim);">
+              Your wallet USDC balance: <span class="mono" id="infoWalletBal" style="color:var(--text);">—</span>
+            </div>
+
             <div class="form-row">
               <div class="form-group">
-                <label>Wallet Address</label>
-                <input type="text" id="wlAddress" placeholder="0x..." />
+                <label>Amount (USDC)</label>
+                <input type="number" id="depositAmount" min="0" step="0.000001" placeholder="e.g. 50" />
               </div>
-              <div class="form-group">
-                <label>Student ID</label>
-                <input type="text" id="wlStudentId" placeholder="STU-2026-003" />
-              </div>
-              <button class="btn btn-primary" onclick="whitelistStudent()">Whitelist</button>
+              <button class="btn btn-primary" id="btnDeposit" onclick="deposit()">Deposit</button>
+            </div>
+
+            <div class="note">
+              <strong>Two-step process:</strong> Clicking Deposit will first ask MetaMask to
+              <strong>approve</strong> the contract to spend your USDC, then a second transaction
+              will <strong>transfer</strong> it into escrow. Confirm both prompts.
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Section 2: Assign Credit Units -->
-      <div class="section open" id="secCreditUnits">
-        <div class="section-header" onclick="toggleSection('secCreditUnits')">
-          <h3>🎓 Assign Credit Units</h3>
+      <!-- Section 4: Withdraw Excess -->
+      <div class="section" id="secWithdraw">
+        <div class="section-header" onclick="toggleSection('secWithdraw')">
+          <h3>↩ Withdraw Excess</h3>
           <span class="chevron">▼</span>
         </div>
         <div class="section-body">
           <div class="section-content">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Student Wallet</label>
-                <input type="text" id="cuAddress" placeholder="0x..." />
-              </div>
-              <div class="form-group" style="max-width: 120px;">
-                <label>Credit Units</label>
-                <input type="number" id="cuUnits" min="1" max="30" placeholder="4" />
-              </div>
-              <button class="btn btn-primary" onclick="setCreditUnits()">Assign</button>
-            </div>
+            <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:1rem;">
+              If you have deposited more than your required fees, you can withdraw the difference back to your wallet.
+            </p>
+            <button class="btn btn-secondary" onclick="withdrawExcess()">Withdraw Excess</button>
           </div>
         </div>
       </div>
 
-      <!-- Section 3: Set Payment Date -->
-      <div class="section open" id="secPaymentDate">
-        <div class="section-header" onclick="toggleSection('secPaymentDate')">
-          <h3>📅 Set Payment Date</h3>
+      <!-- Section 5: Emergency Withdraw -->
+      <div class="section" id="secEmergency">
+        <div class="section-header" onclick="toggleSection('secEmergency')">
+          <h3>🚨 Emergency Withdraw</h3>
           <span class="chevron">▼</span>
         </div>
         <div class="section-body">
           <div class="section-content">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Payment Deadline</label>
-                <input type="datetime-local" id="pdDate" />
-              </div>
-              <button class="btn btn-primary" onclick="setPaymentDate()">Set Date</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section 4: Execute Payment -->
-      <div class="section open" id="secPayment">
-        <div class="section-header" onclick="toggleSection('secPayment')">
-          <h3>💸 Execute Payment</h3>
-          <span class="chevron">▼</span>
-        </div>
-        <div class="section-body">
-          <div class="section-content">
-
-            <!-- Student overview table -->
-            <div class="table-wrap" style="margin-bottom: 1rem;">
-              <table>
-                <thead>
-                  <tr>
-                    <th style="width: 30px;"></th>
-                    <th>Wallet</th>
-                    <th>Credit Units</th>
-                    <th>Owed</th>
-                    <th>Escrow</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="studentTableBody">
-                  <tr><td colspan="6" style="text-align:center; color:var(--text-mute);">Loading students...</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div class="checkbox-row">
-                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" />
-                <label for="selectAll" style="font-size:0.82rem; color:var(--text-dim); cursor:pointer;">Select all eligible</label>
-              </div>
-              <button class="btn btn-primary" id="btnExecute" onclick="executePayment()">Execute Payment</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section 5: Pause / Unpause -->
-      <div class="section" id="secPause">
-        <div class="section-header" onclick="toggleSection('secPause')">
-          <h3>⚙️ Contract Controls</h3>
-          <span class="chevron">▼</span>
-        </div>
-        <div class="section-body">
-          <div class="section-content">
-            <div style="display: flex; gap: 0.75rem;">
-              <button class="btn btn-danger" onclick="pauseContract()">Pause Contract</button>
-              <button class="btn btn-primary" onclick="unpauseContract()">Unpause Contract</button>
+            <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:1rem;">
+              If the contract has been paused by the administrator (e.g. due to an oracle failure or
+              detected exploit), you can withdraw your full escrow balance here.
+            </p>
+            <button class="btn btn-danger" onclick="emergencyWithdraw()">Emergency Withdraw</button>
+            <div class="note" style="margin-top:0.75rem;">
+              <strong>Only available when the contract is paused.</strong>
+              The transaction will revert if the contract is currently active.
             </div>
           </div>
         </div>
@@ -684,38 +744,32 @@
 
       // Hardhat local node
       RPC_URL: "http://127.0.0.1:8545",
-
-      // Known student addresses from deploy script (for the table)
-      // Add more as you whitelist them
-      KNOWN_STUDENTS: [
-        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",  // Account #1
-        "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",  // Account #2
-      ],
     };
 
     // ================================================================
     //  ABI (only the functions we need)
     // ================================================================
     const TUITION_ABI = [
-      "function ADMIN_ROLE() view returns (bytes32)",
       "function STUDENT_ROLE() view returns (bytes32)",
       "function hasRole(bytes32 role, address account) view returns (bool)",
+      "function creditUnits(address) view returns (uint256)",
       "function feePerUnit() view returns (uint256)",
       "function paymentDate() view returns (uint256)",
+      "function lockedFxRate() view returns (uint256)",
+      "function getLatestRate() view returns (int256 price, uint256 updatedAt)",
       "function escrowBalance(address) view returns (uint256)",
-      "function creditUnits(address) view returns (uint256)",
       "function calculateFees(address) view returns (uint256)",
-      "function checkSufficient(address) view returns (bool)",
-      "function whitelistStudent(address student, bytes32 studentHash)",
-      "function setCreditUnits(address student, uint256 units)",
-      "function setPaymentDate(uint256 _date)",
-      "function executePayment(address[] students)",
-      "function pause()",
-      "function unpause()",
+      "function calculateFeesInJPY(address) view returns (uint256)",
+      "function getStatus(address) view returns (bool isWhitelisted, bool isDeposited, bool isPaid, uint256 balance)",
+      "function deposit(uint256 amount)",
+      "function withdrawExcess()",
+      "function emergencyWithdraw()",
     ];
 
     const USDC_ABI = [
       "function balanceOf(address) view returns (uint256)",
+      "function approve(address spender, uint256 amount) returns (bool)",
+      "function allowance(address owner, address spender) view returns (uint256)",
     ];
 
     // ================================================================
@@ -737,29 +791,25 @@
       }
 
       try {
-        // Request account access
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
+        await window.ethereum.request({ method: "eth_requestAccounts" });
 
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
         connectedAddress = await signer.getAddress();
 
-        // Setup contracts
         tuitionContract = new ethers.Contract(CONFIG.TUITION_ADDRESS, TUITION_ABI, signer);
-        usdcContract = new ethers.Contract(CONFIG.USDC_ADDRESS, USDC_ABI, provider);
+        usdcContract = new ethers.Contract(CONFIG.USDC_ADDRESS, USDC_ABI, signer);
 
-        // Verify admin role
-        const adminRole = await tuitionContract.ADMIN_ROLE();
-        const isAdmin = await tuitionContract.hasRole(adminRole, connectedAddress);
+        // Verify student role
+        const studentRole = await tuitionContract.STUDENT_ROLE();
+        const isStudent = await tuitionContract.hasRole(studentRole, connectedAddress);
 
-        if (!isAdmin) {
-          toast("Connected wallet is not an admin. Access denied.", "error");
+        if (!isStudent) {
+          toast("This wallet is not registered as a student. Contact your administrator.", "error");
           return;
         }
 
-        // Update UI
+        // Update header button
         const btn = document.getElementById("btnConnect");
         btn.classList.add("connected");
         document.getElementById("connectLabel").textContent =
@@ -768,9 +818,7 @@
         document.getElementById("loginScreen").classList.add("hidden");
         document.getElementById("dashboard").classList.add("active");
 
-        toast("Connected as admin", "success");
-
-        // Load dashboard data
+        toast("Connected as student", "success");
         await refreshDashboard();
 
       } catch (err) {
@@ -779,228 +827,179 @@
       }
     }
 
-    // Listen for account changes
+    // Listen for account/network changes
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", () => location.reload());
       window.ethereum.on("chainChanged", () => location.reload());
     }
 
     // ================================================================
-    //  DASHBOARD DATA
+    //  DASHBOARD REFRESH
     // ================================================================
     async function refreshDashboard() {
+      if (!tuitionContract || !connectedAddress) return;
+
       try {
-        // Fee per unit
-        const feeRaw = await tuitionContract.feePerUnit();
-        document.getElementById("statFee").textContent =
-          "$" + ethers.formatUnits(feeRaw, 6);
+        // --- Stats row ---
+        const cu = await tuitionContract.creditUnits(connectedAddress);
+        const fees = await tuitionContract.calculateFees(connectedAddress);
+        const paymentDateRaw = await tuitionContract.paymentDate();
 
-        // Payment date
-        const pdRaw = await tuitionContract.paymentDate();
-        const pd = Number(pdRaw);
+        document.getElementById("statCU").textContent = Number(cu).toString();
+        document.getElementById("statFees").textContent = "$" + ethers.formatUnits(fees, 6);
+
+        const pd = Number(paymentDateRaw);
         document.getElementById("statDate").textContent =
-          pd === 0 ? "Not set" : new Date(pd * 1000).toLocaleString();
+          pd === 0 ? "Not set" : new Date(pd * 1000).toLocaleDateString();
 
-        // Contract USDC balance
-        const bal = await usdcContract.balanceOf(CONFIG.TUITION_ADDRESS);
-        document.getElementById("statBalance").textContent =
-          "$" + ethers.formatUnits(bal, 6);
+        // --- Fee statement ---
+        const [isWhitelisted, isDeposited, isPaid, balance] =
+          await tuitionContract.getStatus(connectedAddress);
 
-        // Student table
-        await refreshStudentTable();
+        document.getElementById("infoEscrow").textContent =
+          "$" + ethers.formatUnits(balance, 6);
+        document.getElementById("infoOwed").textContent =
+          "$" + ethers.formatUnits(fees, 6);
+
+        if (isPaid) {
+          document.getElementById("infoDepositStatus").innerHTML =
+            '<span class="badge badge-green">Paid</span>';
+          document.getElementById("infoPayStatus").innerHTML =
+            '<span class="badge badge-green">Completed</span>';
+          document.getElementById("shortfallRow").style.display = "none";
+        } else if (isDeposited) {
+          document.getElementById("infoDepositStatus").innerHTML =
+            '<span class="badge badge-green">Sufficient</span>';
+          document.getElementById("infoPayStatus").innerHTML =
+            '<span class="badge badge-amber">Pending</span>';
+          document.getElementById("shortfallRow").style.display = "none";
+        } else {
+          document.getElementById("infoDepositStatus").innerHTML =
+            '<span class="badge badge-amber">Insufficient</span>';
+          document.getElementById("infoPayStatus").innerHTML =
+            '<span class="badge badge-amber">Pending</span>';
+
+          // Show shortfall
+          const shortfall = fees > balance ? fees - balance : 0n;
+          if (shortfall > 0n) {
+            document.getElementById("shortfallAmount").textContent =
+              ethers.formatUnits(shortfall, 6);
+            document.getElementById("shortfallRow").style.display = "block";
+          }
+        }
+
+        // --- FX Rate ---
+        const lockedRate = await tuitionContract.lockedFxRate();
+        if (lockedRate > 0n) {
+          // lockedRate is JPY/USD at 8 decimals: e.g. 670000 = 0.00670000 USD/JPY
+          // Invert to get JPY per USD: 1e8 / lockedRate
+          const jpyPerUsd = Number(10n ** 8n * 10000n / lockedRate) / 10000;
+          document.getElementById("infoLockedRate").textContent =
+            "¥" + jpyPerUsd.toFixed(2) + " / USD";
+
+          // JPY equivalent of fees (contract does the math)
+          try {
+            const jpyFees = await tuitionContract.calculateFeesInJPY(connectedAddress);
+            document.getElementById("infoJPY").textContent =
+              "¥" + Number(jpyFees).toLocaleString();
+          } catch {
+            document.getElementById("infoJPY").textContent = "—";
+          }
+        } else {
+          document.getElementById("infoLockedRate").textContent = "Not locked";
+          document.getElementById("infoJPY").textContent = "—";
+        }
+
+        // Live Chainlink rate
+        try {
+          const [livePrice, updatedAt] = await tuitionContract.getLatestRate();
+          const livePriceNum = Number(livePrice);
+          const jpyPerUsdLive = Number(1e8 * 10000 / livePriceNum) / 10000;
+          document.getElementById("infoLiveRate").textContent =
+            "¥" + jpyPerUsdLive.toFixed(2) + " / USD";
+
+          const ageSeconds = Math.floor(Date.now() / 1000) - Number(updatedAt);
+          const ageMinutes = Math.floor(ageSeconds / 60);
+          document.getElementById("infoRateAge").textContent =
+            ageMinutes < 1 ? "< 1 min ago" : ageMinutes + " min ago";
+        } catch {
+          document.getElementById("infoLiveRate").textContent = "Unavailable";
+          document.getElementById("infoRateAge").textContent = "—";
+        }
+
+        // --- Wallet USDC balance ---
+        const walletBal = await usdcContract.balanceOf(connectedAddress);
+        document.getElementById("infoWalletBal").textContent =
+          "$" + ethers.formatUnits(walletBal, 6);
 
       } catch (err) {
         console.error("Dashboard refresh error:", err);
+        toast("Failed to load data: " + parseError(err), "error");
       }
-    }
-
-    async function refreshStudentTable() {
-      const tbody = document.getElementById("studentTableBody");
-      const students = CONFIG.KNOWN_STUDENTS;
-
-      if (students.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-mute);">No students registered</td></tr>`;
-        return;
-      }
-
-      let rows = "";
-
-      for (const addr of students) {
-        const cu = await tuitionContract.creditUnits(addr);
-        const owed = await tuitionContract.calculateFees(addr);
-        const escrow = await tuitionContract.escrowBalance(addr);
-        const sufficient = await tuitionContract.checkSufficient(addr);
-
-        const cuNum = Number(cu);
-        const owedStr = "$" + ethers.formatUnits(owed, 6);
-        const escrowStr = "$" + ethers.formatUnits(escrow, 6);
-        const shortAddr = addr.slice(0, 6) + "..." + addr.slice(-4);
-
-        let badge;
-        if (cuNum === 0) {
-          badge = `<span class="badge badge-red">No CU</span>`;
-        } else if (sufficient) {
-          badge = `<span class="badge badge-green">Ready</span>`;
-        } else {
-          badge = `<span class="badge badge-amber">Pending</span>`;
-        }
-
-        rows += `
-          <tr>
-            <td><input type="checkbox" class="student-cb" value="${addr}" ${sufficient ? "" : "disabled"} /></td>
-            <td class="addr" title="${addr}">${shortAddr}</td>
-            <td class="mono">${cuNum}</td>
-            <td class="mono">${owedStr}</td>
-            <td class="mono">${escrowStr}</td>
-            <td>${badge}</td>
-          </tr>
-        `;
-      }
-
-      tbody.innerHTML = rows;
     }
 
     // ================================================================
-    //  ADMIN ACTIONS
+    //  STUDENT ACTIONS
     // ================================================================
-    async function whitelistStudent() {
-      const address = document.getElementById("wlAddress").value.trim();
-      const studentId = document.getElementById("wlStudentId").value.trim();
-
-      if (!ethers.isAddress(address)) {
-        toast("Invalid wallet address", "error");
+    async function deposit() {
+      const raw = document.getElementById("depositAmount").value.trim();
+      if (!raw || isNaN(parseFloat(raw)) || parseFloat(raw) <= 0) {
+        toast("Enter a valid USDC amount", "error");
         return;
       }
-      if (!studentId) {
-        toast("Student ID is required", "error");
+
+      let amount;
+      try {
+        amount = ethers.parseUnits(raw, 6);
+      } catch {
+        toast("Invalid amount format", "error");
         return;
       }
 
       try {
-        toast("Submitting whitelist transaction...", "info");
-        const studentHash = ethers.keccak256(
-          ethers.solidityPacked(["string"], [studentId])
-        );
-        const tx = await tuitionContract.whitelistStudent(address, studentHash);
-        await tx.wait();
+        // Step 1: Approve
+        toast("Step 1/2 — Approving USDC spend...", "info");
+        const approveTx = await usdcContract.approve(CONFIG.TUITION_ADDRESS, amount);
+        await approveTx.wait();
+        toast("Approval confirmed. Sending deposit...", "info");
 
-        // Add to known students if not already there
-        if (!CONFIG.KNOWN_STUDENTS.includes(address)) {
-          CONFIG.KNOWN_STUDENTS.push(address);
-        }
+        // Step 2: Deposit
+        const depositTx = await tuitionContract.deposit(amount);
+        await depositTx.wait();
 
-        toast(`Whitelisted ${address.slice(0, 8)}...`, "success");
-        document.getElementById("wlAddress").value = "";
-        document.getElementById("wlStudentId").value = "";
+        toast("Deposit successful! Escrow updated.", "success");
+        document.getElementById("depositAmount").value = "";
         await refreshDashboard();
 
       } catch (err) {
         console.error(err);
-        toast("Whitelist failed: " + parseError(err), "error");
+        toast("Deposit failed: " + parseError(err), "error");
       }
     }
 
-    async function setCreditUnits() {
-      const address = document.getElementById("cuAddress").value.trim();
-      const units = parseInt(document.getElementById("cuUnits").value);
-
-      if (!ethers.isAddress(address)) {
-        toast("Invalid wallet address", "error");
-        return;
-      }
-      if (isNaN(units) || units < 1 || units > 30) {
-        toast("Credit units must be between 1 and 30", "error");
-        return;
-      }
-
+    async function withdrawExcess() {
       try {
-        toast("Submitting credit units transaction...", "info");
-        const tx = await tuitionContract.setCreditUnits(address, units);
+        toast("Submitting withdrawal...", "info");
+        const tx = await tuitionContract.withdrawExcess();
         await tx.wait();
-
-        toast(`Set ${units} credit units for ${address.slice(0, 8)}...`, "success");
-        document.getElementById("cuAddress").value = "";
-        document.getElementById("cuUnits").value = "";
+        toast("Excess withdrawn to your wallet.", "success");
         await refreshDashboard();
-
       } catch (err) {
         console.error(err);
-        toast("Set CU failed: " + parseError(err), "error");
+        toast("Withdrawal failed: " + parseError(err), "error");
       }
     }
 
-    async function setPaymentDate() {
-      const dateStr = document.getElementById("pdDate").value;
-      if (!dateStr) {
-        toast("Please select a date and time", "error");
-        return;
-      }
-
-      const timestamp = Math.floor(new Date(dateStr).getTime() / 1000);
-      const now = Math.floor(Date.now() / 1000);
-
-      if (timestamp <= now) {
-        toast("Payment date must be in the future", "error");
-        return;
-      }
-
+    async function emergencyWithdraw() {
       try {
-        toast("Setting payment date...", "info");
-        const tx = await tuitionContract.setPaymentDate(timestamp);
+        toast("Submitting emergency withdrawal...", "info");
+        const tx = await tuitionContract.emergencyWithdraw();
         await tx.wait();
-
-        toast("Payment date set to " + new Date(dateStr).toLocaleString(), "success");
-        document.getElementById("pdDate").value = "";
+        toast("Emergency withdrawal complete.", "success");
         await refreshDashboard();
-
       } catch (err) {
         console.error(err);
-        toast("Set date failed: " + parseError(err), "error");
-      }
-    }
-
-    async function executePayment() {
-      const checkboxes = document.querySelectorAll(".student-cb:checked");
-      const addresses = Array.from(checkboxes).map((cb) => cb.value);
-
-      if (addresses.length === 0) {
-        toast("Select at least one student", "error");
-        return;
-      }
-
-      try {
-        toast(`Executing payment for ${addresses.length} student(s)...`, "info");
-        const tx = await tuitionContract.executePayment(addresses);
-        await tx.wait();
-
-        toast(`Payment executed for ${addresses.length} student(s)`, "success");
-        await refreshDashboard();
-
-      } catch (err) {
-        console.error(err);
-        toast("Payment failed: " + parseError(err), "error");
-      }
-    }
-
-    async function pauseContract() {
-      try {
-        toast("Pausing contract...", "info");
-        const tx = await tuitionContract.pause();
-        await tx.wait();
-        toast("Contract paused", "success");
-      } catch (err) {
-        toast("Pause failed: " + parseError(err), "error");
-      }
-    }
-
-    async function unpauseContract() {
-      try {
-        toast("Unpausing contract...", "info");
-        const tx = await tuitionContract.unpause();
-        await tx.wait();
-        toast("Contract unpaused", "success");
-      } catch (err) {
-        toast("Unpause failed: " + parseError(err), "error");
+        toast("Emergency withdrawal failed: " + parseError(err), "error");
       }
     }
 
@@ -1009,13 +1008,6 @@
     // ================================================================
     function toggleSection(id) {
       document.getElementById(id).classList.toggle("open");
-    }
-
-    function toggleSelectAll() {
-      const checked = document.getElementById("selectAll").checked;
-      document.querySelectorAll(".student-cb:not(:disabled)").forEach((cb) => {
-        cb.checked = checked;
-      });
     }
 
     function toast(msg, type = "info") {
