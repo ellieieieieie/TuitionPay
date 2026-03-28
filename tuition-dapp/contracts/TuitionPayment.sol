@@ -14,7 +14,7 @@ import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.so
  *         batch payment to the university wallet on the due date.
  *
  *         Integrates Chainlink Price Feeds to provide a locked JPY/USD
- *         rate each semester, allowing students to see the JPY equivalent
+ *         rate each trimester, allowing students to see the JPY equivalent
  *         of their USDC fees. All payments are denominated in USDC.
  *
  *         Security: AccessControl (RBAC), ReentrancyGuard, Pausable,
@@ -71,7 +71,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     /// @notice Timestamp when payment will be pulled from escrow
     uint256 public paymentDate;
 
-    /// @notice JPY/USD rate (8 decimals) locked by admin for the semester.
+    /// @notice JPY/USD rate (8 decimals) locked by admin for the trimester.
     ///         Provides a consistent rate for all students to see the JPY
     ///         equivalent of their USDC fees on their fee statement.
     int256 public lockedFxRate;
@@ -85,8 +85,8 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     mapping(address => bytes32) public walletToStudentHash;
 
     /// @notice Tracks whether a student's tuition has been paid for the
-    ///         current semester. Set to true inside executePayment(),
-    ///         reset by admin at the start of each new semester.
+    ///         current trimester. Set to true inside executePayment(),
+    ///         reset by admin at the start of each new trimester.
     mapping(address => bool) public paymentCompleted;
 
     /// @notice Rate limiting: tracks the last deposit timestamp per student.
@@ -290,7 +290,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
             delete walletToStudentHash[student];
         }
 
-        // Revoke role, clear semester-specific data
+        // Revoke role, clear trimester-specific data
         _revokeRole(STUDENT_ROLE, student);
         delete creditUnits[student];
         delete paymentCompleted[student];
@@ -319,7 +319,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
 
     /**
      * @notice Batch-assign credit units to multiple whitelisted students
-     *         in a single transaction. Useful at semester start when the
+     *         in a single transaction. Useful at trimester start when the
      *         admin needs to configure the entire cohort.
      *
      * @dev    Gas savings: pays the 21 000 base transaction gas only once.
@@ -452,12 +452,12 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Lock the current FX rate for the semester.
+     * @notice Lock the current FX rate for the trimester.
      *         Reads getLatestRate() (which includes staleness check),
      *         then stores the rate so all students see the same JPY
      *         equivalent on their fee statements.
      *
-     * @dev    Called once per semester by admin, typically before the
+     * @dev    Called once per trimester by admin, typically before the
      *         payment window opens. The locked rate is used by
      *         calculateFeesInJPY() and recorded in PaymentExecuted events.
      */
@@ -472,7 +472,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
 
     /**
      * @notice Reset payment status for a batch of students at the start
-     *         of a new semester, so they can be processed again.
+     *         of a new trimester, so they can be processed again.
      *
      * @dev    Bounded by MAX_BATCH_SIZE. Uses cached students[i] and
      *         unchecked loop increment for gas efficiency.
@@ -521,7 +521,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
         require(students.length > 0, "Empty student array");
         require(students.length <= MAX_BATCH_SIZE, "Batch too large");
 
-        // Use the locked FX rate (set by admin for this semester)
+        // Use the locked FX rate (set by admin for this trimester)
         int256 fxRate = lockedFxRate;
         require(fxRate > 0, "FX rate not locked");
 
@@ -547,7 +547,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
 
                 emit PaymentExecuted(student, required, fxRate, block.timestamp);
             } else if (paymentCompleted[student]) {
-                // Already paid this semester — skip silently
+                // Already paid this trimester — skip silently
             } else {
                 emit InsufficientBalance(student, required, balance);
             }
@@ -649,7 +649,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     /**
      * @notice Convert a student's USDC fees to JPY using the locked FX rate.
      *         For frontend display — shows students how much JPY their
-     *         tuition costs at the semester's locked rate.
+     *         tuition costs at the trimester's locked rate.
      *
      * @param student  Address of the student
      * @return JPY equivalent (whole yen, e.g. 150000 = ¥150,000)
@@ -694,7 +694,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
      * @param student              Address of the student to query
      * @return isWhitelisted       True if the student holds STUDENT_ROLE
      * @return isDeposited         True if escrow balance >= total fees owed
-     * @return isPaid              True if payment has been executed this semester
+     * @return isPaid              True if payment has been executed this trimester
      * @return balance             Current escrow balance (USDC, 6 decimals)
      * @return nextDepositAllowed  Timestamp when the student can next call deposit()
      */
