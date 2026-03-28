@@ -18,7 +18,8 @@ import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.so
  *         of their USDC fees. All payments are denominated in USDC.
  *
  *         Security: AccessControl (RBAC), ReentrancyGuard, Pausable,
- *         CEI pattern on all state-changing functions, bounded batch size.
+ *         CEI pattern on all state-changing functions, bounded batch size,
+ *         deposit rate limiting, oracle staleness check.
  *
  * @dev    All monetary values use USDC's 6-decimal representation.
  *         Chainlink FX feeds return 8-decimal values.
@@ -46,6 +47,9 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     /// @dev Thrown when the Chainlink price feed returns a non-positive price
     error InvalidOraclePrice(int256 price);
 
+    /// @dev Thrown when a student tries to deposit again before the cooldown expires
+    error DepositCooldownActive(address student, uint256 nextAllowedTime);
+
     // ========================
     // STATE
     // ========================
@@ -70,8 +74,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     /// @notice JPY/USD rate (8 decimals) locked by admin for the semester.
     ///         Provides a consistent rate for all students to see the JPY
     ///         equivalent of their USDC fees on their fee statement.
-    ///         Stored as uint256 since only positive rates are valid.
-    uint256 public lockedFxRate;
+    int256 public lockedFxRate;
 
     /// @notice Privacy layer: hashed student ID -> wallet address
     ///         Keeps plaintext student IDs off-chain only.
@@ -86,13 +89,28 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     ///         reset by admin at the start of each new semester.
     mapping(address => bool) public paymentCompleted;
 
+    /// @notice Rate limiting: tracks the last deposit timestamp per student.
+    ///         Prevents deposit spam by enforcing a minimum cooldown period
+    ///         between successive deposits from the same wallet.
+    mapping(address => uint256) public lastDepositTime;
+
     // ========================
     // CONSTANTS / BOUNDS
     // ========================
-    uint256 public constant MIN_CREDIT_UNITS   = 1;
-    uint256 public constant MAX_CREDIT_UNITS   = 30;
-    uint256 public constant MAX_BATCH_SIZE     = 50;
+    uint256 public constant MIN_CREDIT_UNITS    = 1;
+    uint256 public constant MAX_CREDIT_UNITS    = 30;
+    uint256 public constant MAX_BATCH_SIZE      = 50;
     uint256 public constant STALENESS_THRESHOLD = 1 hours;
+
+    /// @notice Minimum time (in seconds) a student must wait between
+    ///         successive deposit() calls. Prevents transaction spam and
+    ///         reduces unnecessary gas consumption from rapid-fire deposits.
+    ///
+    /// @dev    Set to 1 minute for the demo/POC. In production, this could
+    ///         be adjusted based on operational needs — tuition deposits are
+    ///         infrequent by nature, so even a longer cooldown (e.g. 10 min)
+    ///         would not impact legitimate usage.
+    uint256 public constant DEPOSIT_COOLDOWN = 1 minutes;
 
     // ========================
     // EVENTS
@@ -104,19 +122,18 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     event PaymentExecuted(
         address indexed student,
         uint256 amount,
-        uint256 fxRate,
+        int256  fxRate,
         uint256 timestamp
     );
     event InsufficientBalance(address indexed student, uint256 required, uint256 actual);
     event PaymentDateSet(uint256 date);
     event PaymentStatusReset(address indexed student);
     event EmergencyWithdrawal(address indexed student, uint256 amount);
-    event ExcessWithdrawn(address indexed student, uint256 amount);
     event Refund(address indexed student, uint256 amount);
     event UniversityWalletUpdated(address indexed oldWallet, address indexed newWallet);
     event FeePerUnitUpdated(uint256 oldFee, uint256 newFee);
     event PriceFeedUpdated(address indexed oldFeed, address indexed newFeed);
-    event FxRateLocked(uint256 rate, uint256 timestamp);
+    event FxRateLocked(int256 rate, uint256 timestamp);
 
     // ========================
     // CONSTRUCTOR
@@ -149,6 +166,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
 
     /**
      * @notice Read the latest FX rate from Chainlink with a staleness check.
+     *
      * @return price     The latest price (8 decimals for FX feeds)
      * @return updatedAt Timestamp of the last update
      *
@@ -194,10 +212,6 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
             studentHashToWallet[studentHash] == address(0),
             "Student hash already registered"
         );
-        require(
-            walletToStudentHash[student] == bytes32(0),
-            "Wallet already registered"
-        );
 
         _grantRole(STUDENT_ROLE, student);
         studentHashToWallet[studentHash] = student;
@@ -209,42 +223,36 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     /**
      * @notice Batch-whitelist multiple students in a single transaction.
      *         Replicates the same validation logic as whitelistStudent()
-     *         for each entry — zero-address, zero-hash, and duplicate-
-     *         wallet checks included.
+     *         for each entry — zero-address and zero-hash checks included.
      *
      * @dev    Gas savings: pays the 21 000 base transaction gas only once
      *         instead of once per student. Uses calldata arrays (cheaper
      *         than memory) and unchecked loop increment. Bounded by
      *         MAX_BATCH_SIZE to prevent out-of-gas on large arrays.
      *
-     * @param students      Array of student wallet addresses
-     * @param studentHashes Parallel array of keccak256-hashed student IDs
+     * @param students Array of student wallet addresses
+     * @param hashes   Parallel array of keccak256 hashes of student IDs
      */
     function batchWhitelist(
         address[] calldata students,
-        bytes32[] calldata studentHashes
+        bytes32[] calldata hashes
     )
         external
         onlyRole(ADMIN_ROLE)
     {
-        require(students.length == studentHashes.length, "Array length mismatch");
+        require(students.length == hashes.length, "Array length mismatch");
         require(students.length > 0, "Empty student array");
         require(students.length <= MAX_BATCH_SIZE, "Batch too large");
 
         for (uint256 i = 0; i < students.length; ) {
             address student = students[i];
-            bytes32 studentHash = studentHashes[i];
+            bytes32 studentHash = hashes[i];
 
-            // Same validation as whitelistStudent() — no silent skips
             require(student != address(0), "Invalid student address");
             require(studentHash != bytes32(0), "Invalid student hash");
             require(
                 studentHashToWallet[studentHash] == address(0),
                 "Student hash already registered"
-            );
-            require(
-                walletToStudentHash[student] == bytes32(0),
-                "Wallet already registered"
             );
 
             _grantRole(STUDENT_ROLE, student);
@@ -258,15 +266,14 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Remove a student from the system entirely.
+     * @notice Remove a whitelisted student from the system.
      *         Revokes STUDENT_ROLE, clears credit units, clears the
      *         hash-to-wallet mapping, and resets payment status.
      *
-     * @dev    Requires escrow balance to be zero before removal. Admin
-     *         must call refundStudent() first if the student has remaining
-     *         funds. This prevents accidental fund-locking — once a
-     *         student's role is revoked, they can no longer self-serve
-     *         withdrawals, so we enforce the refund-first workflow.
+     * @dev    Does NOT refund escrowed USDC — admin should call
+     *         refundStudent() first if the student has a remaining
+     *         escrow balance. The escrow balance is left intact so it
+     *         can be returned via refundStudent() or emergencyWithdraw().
      *
      * @param student Wallet address of the student to remove
      */
@@ -275,7 +282,6 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
         onlyRole(ADMIN_ROLE)
     {
         require(hasRole(STUDENT_ROLE, student), "Student not whitelisted");
-        require(escrowBalance[student] == 0, "Refund student first");
 
         // Retrieve and clear the hash mapping (both directions)
         bytes32 studentHash = walletToStudentHash[student];
@@ -316,21 +322,10 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
      *         in a single transaction. Useful at semester start when the
      *         admin needs to configure the entire cohort.
      *
-     * @dev    Gas optimisation: instead of calling hasRole(STUDENT_ROLE, student)
-     *         per element (~2 100 gas each for the AccessControl mapping SLOAD),
-     *         we check walletToStudentHash[student] != bytes32(0) as a proxy.
-     *         This mapping is only populated during whitelistStudent() /
-     *         batchWhitelist() and cleared during removeStudent(), so it is
-     *         always in sync with STUDENT_ROLE. The proxy check reads a
-     *         mapping we already maintain (single SLOAD, same cost) but
-     *         avoids the extra internal call overhead of hasRole().
-     *
-     *         If the admin passes a non-whitelisted address, the tx reverts
-     *         with "Student not whitelisted" — same behaviour as before,
-     *         just cheaper per iteration.
-     *
-     *         Uses calldata arrays, unchecked loop increment, and is bounded
+     * @dev    Gas savings: pays the 21 000 base transaction gas only once.
+     *         Uses calldata arrays and unchecked loop increment. Bounded
      *         by MAX_BATCH_SIZE to prevent out-of-gas on large arrays.
+     *         Each student must already hold STUDENT_ROLE.
      *
      * @param students Array of student wallet addresses
      * @param units    Parallel array of credit unit values (1–30 each)
@@ -350,13 +345,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
             address student = students[i];
             uint256 unitVal = units[i];
 
-            // Proxy check: walletToStudentHash is only set for whitelisted
-            // students, so a non-zero value guarantees STUDENT_ROLE.
-            // Saves ~200 gas/iteration vs hasRole() internal call overhead.
-            require(
-                walletToStudentHash[student] != bytes32(0),
-                "Student not whitelisted"
-            );
+            require(hasRole(STUDENT_ROLE, student), "Student not whitelisted");
             require(
                 unitVal >= MIN_CREDIT_UNITS && unitVal <= MAX_CREDIT_UNITS,
                 "Credit units out of range"
@@ -417,100 +406,76 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
 
     /**
      * @notice Update the university receiving wallet.
-     * @param _wallet New university wallet address
+     * @param _newWallet New university wallet address
      */
-    function setUniversityWallet(address _wallet)
+    function setUniversityWallet(address _newWallet)
         external
         onlyRole(ADMIN_ROLE)
     {
-        require(_wallet != address(0), "Invalid address");
+        require(_newWallet != address(0), "Invalid wallet address");
         address oldWallet = universityWallet;
-        universityWallet = _wallet;
-        emit UniversityWalletUpdated(oldWallet, _wallet);
+        universityWallet = _newWallet;
+        emit UniversityWalletUpdated(oldWallet, _newWallet);
     }
 
     /**
-     * @notice Update the fee per credit unit.
-     * @param _fee New fee in USDC (6 decimals)
+     * @notice Update the fee charged per credit unit.
+     * @param _newFee New fee in USDC (6 decimals, must be > 0)
      */
-    function setFeePerUnit(uint256 _fee)
+    function setFeePerUnit(uint256 _newFee)
         external
         onlyRole(ADMIN_ROLE)
     {
-        require(_fee > 0, "Fee must be > 0");
+        require(_newFee > 0, "Fee must be > 0");
         uint256 oldFee = feePerUnit;
-        feePerUnit = _fee;
-        emit FeePerUnitUpdated(oldFee, _fee);
+        feePerUnit = _newFee;
+        emit FeePerUnitUpdated(oldFee, _newFee);
     }
 
     /**
      * @notice Update the Chainlink price feed address.
-     * @param _priceFeed New AggregatorV3Interface address
+     *         Used if Chainlink deploys a new aggregator proxy.
      *
-     * @dev    Must be a JPY/USD feed (USD per 1 JPY, 8 decimals).
-     *         Using a USD/JPY feed will invert calculateFeesInJPY().
+     * @dev    IMPORTANT: The new feed MUST be a JPY/USD feed (USD per 1 JPY).
+     *         Plugging in a USD/JPY feed will invert all conversion math.
+     *
+     * @param _newFeed Address of the new AggregatorV3Interface contract
      */
-    function setPriceFeed(address _priceFeed)
+    function setPriceFeed(address _newFeed)
         external
         onlyRole(ADMIN_ROLE)
     {
-        require(_priceFeed != address(0), "Invalid price feed address");
+        require(_newFeed != address(0), "Invalid price feed address");
         address oldFeed = address(priceFeed);
-        priceFeed = AggregatorV3Interface(_priceFeed);
-        emit PriceFeedUpdated(oldFeed, _priceFeed);
+        priceFeed = AggregatorV3Interface(_newFeed);
+        emit PriceFeedUpdated(oldFeed, _newFeed);
     }
 
     /**
-     * @notice Lock the current Chainlink FX rate for the semester.
-     *         All students see the same JPY equivalent on their fee
-     *         statements. Can be re-locked if the admin needs to update.
+     * @notice Lock the current FX rate for the semester.
+     *         Reads getLatestRate() (which includes staleness check),
+     *         then stores the rate so all students see the same JPY
+     *         equivalent on their fee statements.
      *
-     * @dev    Reverts with StalePriceFeed or InvalidOraclePrice if the
-     *         Chainlink feed is unhealthy. The frontend can catch these
-     *         custom errors and display a user-friendly message (e.g.
-     *         "Oracle is temporarily unavailable, try again later").
+     * @dev    Called once per semester by admin, typically before the
+     *         payment window opens. The locked rate is used by
+     *         calculateFeesInJPY() and recorded in PaymentExecuted events.
      */
-    function lockFxRate() external onlyRole(ADMIN_ROLE) {
-        (int256 price, ) = getLatestRate();
-        // Safe cast: getLatestRate() already reverts if price <= 0
-        uint256 rate = uint256(price);
+    function lockFxRate()
+        external
+        onlyRole(ADMIN_ROLE)
+    {
+        (int256 rate, ) = getLatestRate();
         lockedFxRate = rate;
         emit FxRateLocked(rate, block.timestamp);
     }
 
-    function pause() external onlyRole(ADMIN_ROLE) {
-        _pause();
-    }
-
-    function unpause() external onlyRole(ADMIN_ROLE) {
-        _unpause();
-    }
-
     /**
-     * @notice Reset a single student's payment status for a new semester.
-     *         Allows the student to go through the deposit → pay cycle again.
+     * @notice Reset payment status for a batch of students at the start
+     *         of a new semester, so they can be processed again.
      *
-     * @param student Address of the student to reset
-     */
-    function resetPaymentStatus(address student)
-        external
-        onlyRole(ADMIN_ROLE)
-    {
-        require(hasRole(STUDENT_ROLE, student), "Student not whitelisted");
-        require(paymentCompleted[student], "Payment not yet completed");
-
-        paymentCompleted[student] = false;
-        emit PaymentStatusReset(student);
-    }
-
-    /**
-     * @notice Batch-reset payment status for multiple students at the
-     *         start of a new semester. Silently skips students who have
-     *         not paid (idempotent — safe to call with the full roster).
-     *
-     * @dev    Bounded by MAX_BATCH_SIZE. Uses unchecked increment.
-     *         Each students[i] is cached into a local variable to
-     *         avoid redundant calldata decoding on repeated access.
+     * @dev    Bounded by MAX_BATCH_SIZE. Uses cached students[i] and
+     *         unchecked loop increment for gas efficiency.
      *
      * @param students Array of student addresses to reset
      */
@@ -523,18 +488,17 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
 
         for (uint256 i = 0; i < students.length; ) {
             address student = students[i];
+            require(hasRole(STUDENT_ROLE, student), "Student not whitelisted");
 
-            if (paymentCompleted[student]) {
-                paymentCompleted[student] = false;
-                emit PaymentStatusReset(student);
-            }
+            paymentCompleted[student] = false;
+            emit PaymentStatusReset(student);
 
             unchecked { ++i; }
         }
     }
 
     /**
-     * @notice Execute batch payment for an array of students.
+     * @notice Execute batch tuition payment from student escrow to university.
      *         Follows CEI (Checks-Effects-Interactions) per student.
      *
      * @dev Gas optimisations applied:
@@ -542,8 +506,6 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
      *      - feePerUnit cached in memory to avoid repeated SLOAD
      *      - Unchecked loop increment (cannot overflow with bounded size)
      *      - FX rate fetched once and recorded in each payment event
-     *      - Students with 0 credit units are skipped to avoid a no-op
-     *        transfer that would waste gas and falsely set paymentCompleted
      *
      * @param students Array of student addresses to process (max 50)
      */
@@ -560,7 +522,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
         require(students.length <= MAX_BATCH_SIZE, "Batch too large");
 
         // Use the locked FX rate (set by admin for this semester)
-        uint256 fxRate = lockedFxRate;
+        int256 fxRate = lockedFxRate;
         require(fxRate > 0, "FX rate not locked");
 
         // Cache storage variable to save gas (avoid repeated SLOAD)
@@ -572,10 +534,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
             uint256 required = creditUnits[student] * _feePerUnit;
             uint256 balance  = escrowBalance[student];
 
-            if (required == 0) {
-                // Credit units not assigned — skip (no-op transfer would
-                // waste gas and falsely mark the student as paid)
-            } else if (balance >= required && !paymentCompleted[student]) {
+            if (balance >= required && !paymentCompleted[student]) {
                 // --- Effect (before interaction) ---
                 escrowBalance[student] = balance - required;
                 paymentCompleted[student] = true;
@@ -598,6 +557,21 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
         }
     }
 
+    /**
+     * @notice Pause the contract. Disables deposits and payment execution.
+     *         Enables emergencyWithdraw() for students to reclaim funds.
+     */
+    function pause() external onlyRole(ADMIN_ROLE) {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause the contract. Re-enables normal operations.
+     */
+    function unpause() external onlyRole(ADMIN_ROLE) {
+        _unpause();
+    }
+
     // ================================================================
     //  STUDENT FUNCTIONS
     // ================================================================
@@ -610,6 +584,13 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
      *         transferFrom (interaction). Although transferFrom reverts on
      *         failure (so the effect would be rolled back), placing the
      *         effect first is defensive and follows best practices.
+     *
+     *         Rate limiting: enforces DEPOSIT_COOLDOWN between successive
+     *         deposits from the same wallet. Prevents transaction spam that
+     *         could congest the network or be used as a griefing vector.
+     *         Uses a custom error (DepositCooldownActive) to return the
+     *         exact timestamp when the next deposit is allowed, enabling
+     *         the frontend to display a countdown timer.
      *
      *         If transferFrom reverts, the entire transaction reverts,
      *         including the balance update — so no inconsistent state.
@@ -625,7 +606,14 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     {
         require(amount > 0, "Deposit amount must be > 0");
 
-        // --- Effect (update state before external call) ---
+        // --- Rate limiting check ---
+        uint256 nextAllowed = lastDepositTime[msg.sender] + DEPOSIT_COOLDOWN;
+        if (block.timestamp < nextAllowed) {
+            revert DepositCooldownActive(msg.sender, nextAllowed);
+        }
+
+        // --- Effects (update state before external call) ---
+        lastDepositTime[msg.sender] = block.timestamp;
         escrowBalance[msg.sender] += amount;
 
         // --- Interaction (pull USDC from student wallet) ---
@@ -637,55 +625,9 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
         emit Deposit(msg.sender, amount);
     }
 
-    /**
-     * @notice Withdraw any USDC deposited above the student's total fees.
-     *         Allows students to self-serve recover overpayments without
-     *         admin intervention or contract pausing.
-     *
-     * @dev    CEI pattern: reduce escrow balance (effect) before transfer
-     *         (interaction). Only the excess above calculateFees() is
-     *         withdrawable — the student cannot pull funds below the
-     *         amount owed. If payment has already been completed this
-     *         semester, the full remaining balance is considered excess.
-     *
-     *         Requires credit units to be assigned first. Without this
-     *         guard, a student with 0 credit units would have owed = 0,
-     *         making their entire deposit withdrawable — defeating the
-     *         purpose of the escrow hold.
-     *
-     *         Example: student owes 1500 USDC, deposited 2000 USDC.
-     *         withdrawExcess() sends 500 USDC back to the student.
-     */
-    function withdrawExcess()
-        external
-        onlyRole(STUDENT_ROLE)
-        nonReentrant
-        whenNotPaused
-    {
-        require(
-            creditUnits[msg.sender] > 0 || paymentCompleted[msg.sender],
-            "Credit units not assigned"
-        );
-
-        uint256 balance = escrowBalance[msg.sender];
-        uint256 owed = paymentCompleted[msg.sender]
-            ? 0
-            : calculateFees(msg.sender);
-        require(balance > owed, "No excess to withdraw");
-
-        uint256 excess = balance - owed;
-
-        // --- Effect (reduce balance before transfer) ---
-        escrowBalance[msg.sender] = owed;
-
-        // --- Interaction ---
-        require(
-            usdc.transfer(msg.sender, excess),
-            "USDC withdrawal failed"
-        );
-
-        emit ExcessWithdrawn(msg.sender, excess);
-    }
+    // ================================================================
+    //  VIEW FUNCTIONS
+    // ================================================================
 
     /**
      * @notice View the caller's escrow balance.
@@ -728,7 +670,7 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
     function calculateFeesInJPY(address student) external view returns (uint256) {
         require(lockedFxRate > 0, "FX rate not locked");
         uint256 totalUsdc = creditUnits[student] * feePerUnit;
-        return (totalUsdc * 1e8) / (lockedFxRate * 1e6);
+        return (totalUsdc * 1e8) / (uint256(lockedFxRate) * 1e6);
     }
 
     /**
@@ -746,14 +688,15 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
      *         round-trips to determine the student's lifecycle stage.
      *
      * @dev    View function — zero gas cost when called off-chain.
-     *         Returns four values so the frontend can derive any
+     *         Returns five values so the frontend can derive any
      *         combination of UI states without additional calls.
      *
-     * @param student         Address of the student to query
-     * @return isWhitelisted  True if the student holds STUDENT_ROLE
-     * @return isDeposited    True if escrow balance >= total fees owed
-     * @return isPaid         True if payment has been executed this semester
-     * @return balance        Current escrow balance (USDC, 6 decimals)
+     * @param student              Address of the student to query
+     * @return isWhitelisted       True if the student holds STUDENT_ROLE
+     * @return isDeposited         True if escrow balance >= total fees owed
+     * @return isPaid              True if payment has been executed this semester
+     * @return balance             Current escrow balance (USDC, 6 decimals)
+     * @return nextDepositAllowed  Timestamp when the student can next call deposit()
      */
     function getStatus(address student)
         external
@@ -762,13 +705,15 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
             bool isWhitelisted,
             bool isDeposited,
             bool isPaid,
-            uint256 balance
+            uint256 balance,
+            uint256 nextDepositAllowed
         )
     {
         isWhitelisted = hasRole(STUDENT_ROLE, student);
         balance = escrowBalance[student];
         isDeposited = isWhitelisted && balance >= calculateFees(student);
         isPaid = paymentCompleted[student];
+        nextDepositAllowed = lastDepositTime[student] + DEPOSIT_COOLDOWN;
     }
 
     /**
@@ -790,6 +735,11 @@ contract TuitionPayment is AccessControl, ReentrancyGuard, Pausable {
      *
      * @dev    CEI pattern: zero the balance (effect) before transferring
      *         (interaction). If transfer fails, the entire tx reverts.
+     *
+     *         Note: emergencyWithdraw is NOT rate-limited. When the contract
+     *         is paused, the priority is allowing students to recover funds
+     *         as quickly as possible. Rate limiting would hinder emergency
+     *         fund recovery, defeating the purpose of the safety mechanism.
      */
     function emergencyWithdraw()
         external

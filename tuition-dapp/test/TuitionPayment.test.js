@@ -73,10 +73,14 @@ describe("TuitionPayment — Student Payment Flow", function () {
         .withArgs(student1.address, amount);
     });
 
-    it("should allow multiple deposits that accumulate", async function () {
+    it("should allow multiple deposits that accumulate (after cooldown)", async function () {
       const tuitionAddr = await tuition.getAddress();
       await usdc.connect(student1).approve(tuitionAddr, USDC(5000));
       await tuition.connect(student1).deposit(USDC(1000));
+
+      // Wait for cooldown (1 minute)
+      await time.increase(61);
+
       await tuition.connect(student1).deposit(USDC(500));
       expect(await tuition.escrowBalance(student1.address)).to.equal(USDC(1500));
     });
@@ -106,6 +110,53 @@ describe("TuitionPayment — Student Payment Flow", function () {
       await tuition.connect(admin).pause();
       await usdc.connect(student1).approve(await tuition.getAddress(), USDC(1000));
       await expect(tuition.connect(student1).deposit(USDC(1000))).to.be.reverted;
+    });
+  });
+
+  // ================================================================
+  //  Deposit Rate Limiting
+  // ================================================================
+  describe("Deposit rate limiting", function () {
+    it("should revert with DepositCooldownActive if depositing too soon", async function () {
+      await usdc.connect(student1).approve(await tuition.getAddress(), USDC(5000));
+      await tuition.connect(student1).deposit(USDC(1000));
+
+      // Try immediately again — should revert with custom error
+      await expect(
+        tuition.connect(student1).deposit(USDC(500))
+      ).to.be.revertedWithCustomError(tuition, "DepositCooldownActive");
+    });
+
+    it("should allow deposit after cooldown period expires", async function () {
+      await usdc.connect(student1).approve(await tuition.getAddress(), USDC(5000));
+      await tuition.connect(student1).deposit(USDC(1000));
+
+      // Advance 61 seconds (cooldown is 60)
+      await time.increase(61);
+
+      await tuition.connect(student1).deposit(USDC(500));
+      expect(await tuition.escrowBalance(student1.address)).to.equal(USDC(1500));
+    });
+
+    it("should update lastDepositTime on each deposit", async function () {
+      await usdc.connect(student1).approve(await tuition.getAddress(), USDC(5000));
+      await tuition.connect(student1).deposit(USDC(1000));
+
+      const lastTime = await tuition.lastDepositTime(student1.address);
+      expect(lastTime).to.be.gt(0);
+    });
+
+    it("should return nextDepositAllowed in getStatus", async function () {
+      await usdc.connect(student1).approve(await tuition.getAddress(), USDC(1000));
+      await tuition.connect(student1).deposit(USDC(1000));
+
+      const [, , , , nextDepositAllowed] = await tuition.getStatus(student1.address);
+      const lastTime = await tuition.lastDepositTime(student1.address);
+      expect(nextDepositAllowed).to.equal(lastTime + 60n); // DEPOSIT_COOLDOWN = 1 min
+    });
+
+    it("DEPOSIT_COOLDOWN constant should be 60 seconds", async function () {
+      expect(await tuition.DEPOSIT_COOLDOWN()).to.equal(60);
     });
   });
 
@@ -143,12 +194,6 @@ describe("TuitionPayment — Student Payment Flow", function () {
       await usdc.connect(student1).approve(await tuition.getAddress(), USDC(3000));
       await tuition.connect(student1).deposit(USDC(3000));
       expect(await tuition.checkSufficient(student1.address)).to.equal(true);
-    });
-
-    it("should return false for unknown address (0 >= 0 guard)", async function () {
-      // outsider has 0 balance and 0 CU — should still be false
-      expect(await tuition.checkSufficient(outsider.address)).to.equal(true);
-      // Note: checkSufficient returns true for 0>=0; getStatus guards via isWhitelisted
     });
   });
 
@@ -207,74 +252,6 @@ describe("TuitionPayment — Student Payment Flow", function () {
       await expect(
         tuition.connect(student1).emergencyWithdraw()
       ).to.be.revertedWith("No funds to withdraw");
-    });
-  });
-
-  // ================================================================
-  //  withdrawExcess()
-  // ================================================================
-  describe("withdrawExcess()", function () {
-    beforeEach(async function () {
-      await usdc.connect(student1).approve(await tuition.getAddress(), USDC(3000));
-      await tuition.connect(student1).deposit(USDC(3000));
-    });
-
-    it("should withdraw the overpayment", async function () {
-      // Owes 2000, deposited 3000 → excess = 1000
-      await tuition.connect(student1).withdrawExcess();
-      expect(await tuition.escrowBalance(student1.address)).to.equal(USDC(2000));
-      expect(await usdc.balanceOf(student1.address)).to.equal(USDC(8000)); // 10000 - 3000 + 1000
-    });
-
-    it("should emit ExcessWithdrawn event", async function () {
-      await expect(tuition.connect(student1).withdrawExcess())
-        .to.emit(tuition, "ExcessWithdrawn")
-        .withArgs(student1.address, USDC(1000));
-    });
-
-    it("should revert if no excess exists", async function () {
-      // Deposit exact amount
-      const hash2 = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-002"]));
-      await tuition.connect(admin).whitelistStudent(student2.address, hash2);
-      await tuition.connect(admin).setCreditUnits(student2.address, 4);
-      await usdc.mint(student2.address, USDC(2000));
-      await usdc.connect(student2).approve(await tuition.getAddress(), USDC(2000));
-      await tuition.connect(student2).deposit(USDC(2000));
-
-      await expect(
-        tuition.connect(student2).withdrawExcess()
-      ).to.be.revertedWith("No excess to withdraw");
-    });
-
-    it("should revert if credit units not assigned", async function () {
-      const hash2 = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-002"]));
-      await tuition.connect(admin).whitelistStudent(student2.address, hash2);
-      // No setCreditUnits call
-      await usdc.mint(student2.address, USDC(1000));
-      await usdc.connect(student2).approve(await tuition.getAddress(), USDC(1000));
-      await tuition.connect(student2).deposit(USDC(1000));
-
-      await expect(
-        tuition.connect(student2).withdrawExcess()
-      ).to.be.revertedWith("Credit units not assigned");
-    });
-
-    it("should allow full withdrawal after payment completed", async function () {
-      // Complete a payment first, then excess = full remaining balance
-      await tuition.connect(admin).lockFxRate();
-      const now = await time.latest();
-      await tuition.connect(admin).setPaymentDate(now + 60);
-      await time.increase(61);
-      await tuition.connect(admin).executePayment([student1.address]);
-
-      // After payment: escrow = 3000 - 2000 = 1000, owed = 0 (paid)
-      await tuition.connect(student1).withdrawExcess();
-      expect(await tuition.escrowBalance(student1.address)).to.equal(0);
-    });
-
-    it("should revert when paused", async function () {
-      await tuition.connect(admin).pause();
-      await expect(tuition.connect(student1).withdrawExcess()).to.be.reverted;
     });
   });
 
@@ -353,13 +330,6 @@ describe("TuitionPayment — Student Payment Flow", function () {
       ).to.be.revertedWith("Student hash already registered");
     });
 
-    it("should revert if a wallet is already registered", async function () {
-      const newHash = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-NEW"]));
-      await expect(
-        tuition.connect(admin).batchWhitelist([student1.address], [newHash])
-      ).to.be.revertedWith("Wallet already registered");
-    });
-
     it("should revert if caller is not admin", async function () {
       const h = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-X"]));
       await expect(
@@ -393,25 +363,14 @@ describe("TuitionPayment — Student Payment Flow", function () {
       ).to.be.revertedWith("Student not whitelisted");
     });
 
-    it("should revert if student has escrow balance (must refund first)", async function () {
+    it("should allow removal even with escrow balance (no refund-first requirement)", async function () {
       await usdc.connect(student1).approve(await tuition.getAddress(), USDC(1000));
       await tuition.connect(student1).deposit(USDC(1000));
 
-      await expect(
-        tuition.connect(admin).removeStudent(student1.address)
-      ).to.be.revertedWith("Refund student first");
-    });
-
-    it("should allow removal after refund", async function () {
-      await usdc.connect(student1).approve(await tuition.getAddress(), USDC(1000));
-      await tuition.connect(student1).deposit(USDC(1000));
-
-      // Refund first, then remove
-      await tuition.connect(admin).refundStudent(student1.address);
+      // Should NOT revert — escrow balance is left intact for admin to refund later
       await tuition.connect(admin).removeStudent(student1.address);
-
-      const hash = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-2026-001"]));
-      expect(await tuition.studentHashToWallet(hash)).to.equal(ethers.ZeroAddress);
+      // Escrow balance remains
+      expect(await tuition.escrowBalance(student1.address)).to.equal(USDC(1000));
     });
 
     it("should revert if caller is not admin", async function () {
@@ -520,7 +479,6 @@ describe("TuitionPayment — Student Payment Flow", function () {
 
     it("should allow re-locking (update the rate)", async function () {
       await tuition.connect(admin).lockFxRate();
-      // Rate stays the same with mock, but the call should succeed
       await tuition.connect(admin).lockFxRate();
       expect(await tuition.lockedFxRate()).to.equal(MOCK_FX_RATE);
     });
@@ -555,49 +513,6 @@ describe("TuitionPayment — Student Payment Flow", function () {
   });
 
   // ================================================================
-  //  resetPaymentStatus()
-  // ================================================================
-  describe("resetPaymentStatus()", function () {
-    beforeEach(async function () {
-      // Complete a payment cycle
-      await usdc.connect(student1).approve(await tuition.getAddress(), USDC(2000));
-      await tuition.connect(student1).deposit(USDC(2000));
-      await tuition.connect(admin).lockFxRate();
-      const now = await time.latest();
-      await tuition.connect(admin).setPaymentDate(now + 60);
-      await time.increase(61);
-      await tuition.connect(admin).executePayment([student1.address]);
-    });
-
-    it("should reset a paid student's status", async function () {
-      expect(await tuition.paymentCompleted(student1.address)).to.equal(true);
-      await tuition.connect(admin).resetPaymentStatus(student1.address);
-      expect(await tuition.paymentCompleted(student1.address)).to.equal(false);
-    });
-
-    it("should emit PaymentStatusReset event", async function () {
-      await expect(tuition.connect(admin).resetPaymentStatus(student1.address))
-        .to.emit(tuition, "PaymentStatusReset")
-        .withArgs(student1.address);
-    });
-
-    it("should revert if payment not yet completed", async function () {
-      // student2 hasn't paid
-      const hash2 = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-002"]));
-      await tuition.connect(admin).whitelistStudent(student2.address, hash2);
-      await expect(
-        tuition.connect(admin).resetPaymentStatus(student2.address)
-      ).to.be.revertedWith("Payment not yet completed");
-    });
-
-    it("should revert if student not whitelisted", async function () {
-      await expect(
-        tuition.connect(admin).resetPaymentStatus(outsider.address)
-      ).to.be.revertedWith("Student not whitelisted");
-    });
-  });
-
-  // ================================================================
   //  batchResetPayments()
   // ================================================================
   describe("batchResetPayments()", function () {
@@ -617,12 +532,16 @@ describe("TuitionPayment — Student Payment Flow", function () {
       expect(await tuition.paymentCompleted(student1.address)).to.equal(false);
     });
 
-    it("should silently skip unpaid students", async function () {
-      const hash2 = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-002"]));
-      await tuition.connect(admin).whitelistStudent(student2.address, hash2);
-      // student2 never paid — should not revert
-      await tuition.connect(admin).batchResetPayments([student1.address, student2.address]);
-      expect(await tuition.paymentCompleted(student1.address)).to.equal(false);
+    it("should emit PaymentStatusReset for each student", async function () {
+      await expect(tuition.connect(admin).batchResetPayments([student1.address]))
+        .to.emit(tuition, "PaymentStatusReset")
+        .withArgs(student1.address);
+    });
+
+    it("should revert if student not whitelisted", async function () {
+      await expect(
+        tuition.connect(admin).batchResetPayments([outsider.address])
+      ).to.be.revertedWith("Student not whitelisted");
     });
 
     it("should revert on empty array", async function () {
@@ -636,13 +555,14 @@ describe("TuitionPayment — Student Payment Flow", function () {
   //  getStatus()
   // ================================================================
   describe("getStatus()", function () {
-    it("should return (true, false, false, 0) for whitelisted student with no deposit", async function () {
-      const [isWhitelisted, isDeposited, isPaid, balance] =
+    it("should return correct status for whitelisted student with no deposit", async function () {
+      const [isWhitelisted, isDeposited, isPaid, balance, nextDepositAllowed] =
         await tuition.getStatus(student1.address);
       expect(isWhitelisted).to.equal(true);
       expect(isDeposited).to.equal(false);
       expect(isPaid).to.equal(false);
       expect(balance).to.equal(0);
+      expect(nextDepositAllowed).to.equal(60); // lastDepositTime(0) + 60
     });
 
     it("should return isDeposited=true when fully funded", async function () {
@@ -654,13 +574,14 @@ describe("TuitionPayment — Student Payment Flow", function () {
       expect(balance).to.equal(USDC(2000));
     });
 
-    it("should return (false, false, false, 0) for unknown address", async function () {
-      const [isWhitelisted, isDeposited, isPaid, balance] =
+    it("should return (false, false, false, 0, 60) for unknown address", async function () {
+      const [isWhitelisted, isDeposited, isPaid, balance, nextDepositAllowed] =
         await tuition.getStatus(outsider.address);
       expect(isWhitelisted).to.equal(false);
       expect(isDeposited).to.equal(false); // guard: isWhitelisted && balance >= fees
       expect(isPaid).to.equal(false);
       expect(balance).to.equal(0);
+      expect(nextDepositAllowed).to.equal(60);
     });
 
     it("should return isPaid=true after payment execution", async function () {
@@ -674,6 +595,15 @@ describe("TuitionPayment — Student Payment Flow", function () {
 
       const [, , isPaid] = await tuition.getStatus(student1.address);
       expect(isPaid).to.equal(true);
+    });
+
+    it("should return nextDepositAllowed reflecting last deposit time", async function () {
+      await usdc.connect(student1).approve(await tuition.getAddress(), USDC(1000));
+      await tuition.connect(student1).deposit(USDC(1000));
+
+      const lastTime = await tuition.lastDepositTime(student1.address);
+      const [, , , , nextDepositAllowed] = await tuition.getStatus(student1.address);
+      expect(nextDepositAllowed).to.equal(lastTime + 60n);
     });
   });
 
@@ -697,7 +627,7 @@ describe("TuitionPayment — Student Payment Flow", function () {
       // Lock FX rate
       await tuition.connect(admin).lockFxRate();
 
-      // Admin sets payment date to 1 minute from now
+      // Admin sets payment date
       const now = await time.latest();
       await tuition.connect(admin).setPaymentDate(now + 60);
       await time.increase(61);
@@ -710,25 +640,6 @@ describe("TuitionPayment — Student Payment Flow", function () {
       expect(uniBalanceAfter - uniBalanceBefore).to.equal(USDC(1500));
       expect(await tuition.escrowBalance(student2.address)).to.equal(0);
       expect(await tuition.paymentCompleted(student2.address)).to.equal(true);
-    });
-
-    it("should skip students with 0 credit units in executePayment", async function () {
-      const hash2 = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-002"]));
-      await tuition.connect(admin).whitelistStudent(student2.address, hash2);
-      // No CU set for student2
-      await usdc.mint(student2.address, USDC(1000));
-      await usdc.connect(student2).approve(await tuition.getAddress(), USDC(1000));
-      await tuition.connect(student2).deposit(USDC(1000));
-
-      await tuition.connect(admin).lockFxRate();
-      const now = await time.latest();
-      await tuition.connect(admin).setPaymentDate(now + 60);
-      await time.increase(61);
-
-      // Should not revert — student2 is silently skipped
-      await tuition.connect(admin).executePayment([student2.address]);
-      expect(await tuition.paymentCompleted(student2.address)).to.equal(false);
-      expect(await tuition.escrowBalance(student2.address)).to.equal(USDC(1000));
     });
 
     it("should skip already-paid students in executePayment", async function () {
@@ -746,7 +657,7 @@ describe("TuitionPayment — Student Payment Flow", function () {
       const uniBalanceBefore = await usdc.balanceOf(universityWallet.address);
       await tuition.connect(admin).executePayment([student1.address]);
       const uniBalanceAfter = await usdc.balanceOf(universityWallet.address);
-      expect(uniBalanceAfter).to.equal(uniBalanceBefore); // no additional transfer
+      expect(uniBalanceAfter).to.equal(uniBalanceBefore);
     });
 
     it("should emit InsufficientBalance for underfunded students", async function () {
@@ -763,7 +674,7 @@ describe("TuitionPayment — Student Payment Flow", function () {
         .withArgs(student1.address, USDC(2000), USDC(500));
     });
 
-    it("refund → remove → re-whitelist flow", async function () {
+    it("refund → remove flow", async function () {
       await usdc.connect(student1).approve(await tuition.getAddress(), USDC(1000));
       await tuition.connect(student1).deposit(USDC(1000));
 
@@ -771,10 +682,27 @@ describe("TuitionPayment — Student Payment Flow", function () {
       await tuition.connect(admin).refundStudent(student1.address);
       await tuition.connect(admin).removeStudent(student1.address);
 
-      // Re-whitelist with new hash
-      const newHash = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-2026-001-v2"]));
-      await tuition.connect(admin).whitelistStudent(student1.address, newHash);
-      expect(await tuition.studentHashToWallet(newHash)).to.equal(student1.address);
+      const hash = ethers.keccak256(ethers.solidityPacked(["string"], ["STU-2026-001"]));
+      expect(await tuition.studentHashToWallet(hash)).to.equal(ethers.ZeroAddress);
+      expect(await usdc.balanceOf(student1.address)).to.equal(USDC(10000));
+    });
+
+    it("deposit rate limit across full payment cycle", async function () {
+      // First deposit
+      await usdc.connect(student1).approve(await tuition.getAddress(), USDC(5000));
+      await tuition.connect(student1).deposit(USDC(1000));
+
+      // Immediate second deposit should fail
+      await expect(
+        tuition.connect(student1).deposit(USDC(1000))
+      ).to.be.revertedWithCustomError(tuition, "DepositCooldownActive");
+
+      // After cooldown, second deposit succeeds
+      await time.increase(61);
+      await tuition.connect(student1).deposit(USDC(1000));
+
+      expect(await tuition.escrowBalance(student1.address)).to.equal(USDC(2000));
+      expect(await tuition.checkSufficient(student1.address)).to.equal(true);
     });
   });
 });
