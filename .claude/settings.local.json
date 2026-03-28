@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx hardhat:*)",
+      "Bash(node_modules/.bin/hardhat compile:*)"
+    ]
+  }
+}

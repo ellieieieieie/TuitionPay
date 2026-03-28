@@ -1,34 +1,3 @@
-<<<<<<< HEAD
-const { ethers } = require("hardhat");
-
-async function main() {
-  const [deployer] = await ethers.getSigners();
-  console.log("Deploying with account:", deployer.address);
-
-  // ── 1. Deploy MockUSDC (local only — on testnet use real USDC address) ──
-  const MockUSDC = await ethers.getContractFactory("MockUSDC");
-  const usdc = await MockUSDC.deploy();
-  await usdc.waitForDeployment();
-  console.log("MockUSDC deployed to:", await usdc.getAddress());
-
-  // ── 2. Deploy MockPriceFeed (local only — on testnet use real Chainlink feed) ──
-  const MockPriceFeed = await ethers.getContractFactory("MockPriceFeed");
-  const feed = await MockPriceFeed.deploy(670000, 8); // JPY/USD ~0.0067
-  await feed.waitForDeployment();
-  console.log("MockPriceFeed deployed to:", await feed.getAddress());
-
-  // ── 3. Deploy TuitionPayment ──
-  const FEE_PER_UNIT = ethers.parseUnits("500", 6); // $500 per credit unit (USDC 6 dec)
-  const universityWallet = deployer.address;         // use deployer as university for local testing
-
-  const TuitionPayment = await ethers.getContractFactory("TuitionPayment");
-  const tuition = await TuitionPayment.deploy(
-    await usdc.getAddress(),
-    deployer.address,        // admin
-    universityWallet,
-    FEE_PER_UNIT,
-    await feed.getAddress()
-=======
 // scripts/deploy.js
 // Deploys all contracts to the local Hardhat node and sets up test data.
 // Run: npx hardhat run scripts/deploy.js --network localhost
@@ -55,9 +24,9 @@ async function main() {
   await usdc.waitForDeployment();
   console.log("MockUSDC deployed to:      ", await usdc.getAddress());
 
-  // 2. Deploy MockPriceFeed (SGD/USD = 0.75, 8 decimals)
+  // 2. Deploy MockPriceFeed (JPY/USD = 0.0067, 8 decimals)
   const MockPriceFeed = await hre.ethers.getContractFactory("MockPriceFeed");
-  const priceFeed = await MockPriceFeed.deploy(75000000n, 8);
+  const priceFeed = await MockPriceFeed.deploy(670000n, 8);
   await priceFeed.waitForDeployment();
   console.log("MockPriceFeed deployed to: ", await priceFeed.getAddress());
 
@@ -69,45 +38,10 @@ async function main() {
     universityWallet.address,
     FEE_PER_UNIT,
     await priceFeed.getAddress()
->>>>>>> 453e44dcdaa7f3a6a1e49e7d0f167aac59ea21c0
   );
   await tuition.waitForDeployment();
   console.log("TuitionPayment deployed to:", await tuition.getAddress());
 
-<<<<<<< HEAD
-  // ── 4. Quick smoke test: whitelist a student and deposit ──
-  const signers = await ethers.getSigners();
-  const student = signers[1];
-
-  const studentHash = ethers.keccak256(
-    ethers.solidityPacked(["string"], ["STU-2026-001"])
-  );
-
-  await tuition.whitelistStudent(student.address, studentHash);
-  console.log("Student whitelisted:", student.address);
-
-  await tuition.setCreditUnits(student.address, 4);
-  console.log("Credit units set: 4 (owes $2,000 USDC)");
-
-  // Mint USDC to student and deposit
-  await usdc.mint(student.address, ethers.parseUnits("5000", 6));
-  await usdc.connect(student).approve(await tuition.getAddress(), ethers.parseUnits("2000", 6));
-  await tuition.connect(student).deposit(ethers.parseUnits("2000", 6));
-
-  const balance = await tuition.escrowBalance(student.address);
-  console.log("Student escrow balance:", ethers.formatUnits(balance, 6), "USDC");
-
-  const sufficient = await tuition.checkSufficient(student.address);
-  console.log("Payment sufficient?", sufficient);
-
-  console.log("\nDone. All contracts deployed and smoke-tested successfully.");
-}
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
-=======
   // 4. Setup test data — whitelist 2 students
   console.log("\n=== Setting up test data ===\n");
 
@@ -130,14 +64,9 @@ main().catch((err) => {
   await usdc.mint(student2.address, USDC(10000));
   console.log("Minted 10,000 USDC to each student");
 
-  // 6. Students approve and deposit
-  await usdc.connect(student1).approve(await tuition.getAddress(), USDC(2000));
-  await tuition.connect(student1).deposit(USDC(2000));
-  console.log("Student 1 deposited 2,000 USDC");
-
-  await usdc.connect(student2).approve(await tuition.getAddress(), USDC(1500));
-  await tuition.connect(student2).deposit(USDC(1500));
-  console.log("Student 2 deposited 1,500 USDC");
+  // 6. Lock FX rate so students can see JPY equivalent
+  await tuition.lockFxRate();
+  console.log("FX rate locked");
 
   // 7. Print summary
   console.log("\n========================================");
@@ -146,10 +75,12 @@ main().catch((err) => {
   console.log(`TUITION_ADDRESS = "${await tuition.getAddress()}"`);
   console.log(`USDC_ADDRESS    = "${await usdc.getAddress()}"`);
   console.log("========================================\n");
+  console.log("Student wallets (use these in MetaMask):");
+  console.log("  Student 1:", student1.address);
+  console.log("  Student 2:", student2.address);
 }
 
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
->>>>>>> 453e44dcdaa7f3a6a1e49e7d0f167aac59ea21c0
