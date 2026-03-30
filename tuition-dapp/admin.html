@@ -234,6 +234,105 @@
     .stat-card .value.green { color: var(--green); }
     .stat-card .value.amber { color: var(--amber); }
 
+    /* ── Alert Panels ── */
+    .alert-panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .alert-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .alert-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.8rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .alert-panel-header h4 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .alert-count {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .alert-count.red {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid #7f1d1d;
+    }
+
+    .alert-count.amber {
+      background: var(--amber-bg);
+      color: var(--amber);
+      border: 1px solid #713f12;
+    }
+
+    .alert-count.green {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid #166534;
+    }
+
+    .alert-panel-body {
+      padding: 0;
+    }
+
+    .alert-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+
+    .alert-item:last-child {
+      border-bottom: none;
+    }
+
+    .alert-item:hover {
+      background: var(--surface-2);
+    }
+
+    .alert-item .addr {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .alert-item .detail {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+    }
+
+    .alert-item .detail.red { color: var(--red); }
+    .alert-item .detail.amber { color: var(--amber); }
+
+    .alert-empty {
+      padding: 1rem 1.1rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-mute);
+    }
+
     /* ── Sections ── */
     .section {
       background: var(--surface);
@@ -499,6 +598,7 @@
     /* ── Responsive ── */
     @media (max-width: 640px) {
       .stats { grid-template-columns: 1fr; }
+      .alert-panels { grid-template-columns: 1fr; }
       .form-row { flex-direction: column; }
       .header { flex-direction: column; gap: 1rem; align-items: flex-start; }
     }
@@ -544,6 +644,33 @@
           <div class="label">Contract USDC</div>
           <div class="value green" id="statBalance">—</div>
         </div>
+      </div>
+
+      <!-- Alert Panels -->
+      <div class="alert-panels">
+
+        <!-- Insufficient Funds -->
+        <div class="alert-panel">
+          <div class="alert-panel-header">
+            <h4>⚠️ Insufficient Funds</h4>
+            <span class="alert-count red" id="unpaidCount">0</span>
+          </div>
+          <div class="alert-panel-body" id="unpaidList">
+            <div class="alert-empty">Loading...</div>
+          </div>
+        </div>
+
+        <!-- No CU Assigned -->
+        <div class="alert-panel">
+          <div class="alert-panel-header">
+            <h4>📌 No CU Assigned</h4>
+            <span class="alert-count amber" id="noCuCount">0</span>
+          </div>
+          <div class="alert-panel-body" id="noCuList">
+            <div class="alert-empty">Loading...</div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Section 1: Whitelist Student -->
@@ -806,7 +933,7 @@
         document.getElementById("statBalance").textContent =
           "$" + ethers.formatUnits(bal, 6);
 
-        // Student table
+        // Student table + alert panels
         await refreshStudentTable();
 
       } catch (err) {
@@ -820,10 +947,13 @@
 
       if (students.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-mute);">No students registered</td></tr>`;
+        updateAlertPanels([], []);
         return;
       }
 
       let rows = "";
+      const unpaidStudents = [];   // { addr, shortAddr, owed, escrow }
+      const noCuStudents = [];     // { addr, shortAddr }
 
       for (const addr of students) {
         const cu = await tuitionContract.creditUnits(addr);
@@ -839,10 +969,12 @@
         let badge;
         if (cuNum === 0) {
           badge = `<span class="badge badge-red">No CU</span>`;
+          noCuStudents.push({ addr, shortAddr });
         } else if (sufficient) {
           badge = `<span class="badge badge-green">Ready</span>`;
         } else {
           badge = `<span class="badge badge-amber">Pending</span>`;
+          unpaidStudents.push({ addr, shortAddr, owed: owedStr, escrow: escrowStr });
         }
 
         rows += `
@@ -858,6 +990,61 @@
       }
 
       tbody.innerHTML = rows;
+      updateAlertPanels(unpaidStudents, noCuStudents);
+    }
+
+    function updateAlertPanels(unpaidStudents, noCuStudents) {
+      // ── Insufficient Funds panel ──
+      const unpaidCountEl = document.getElementById("unpaidCount");
+      const unpaidListEl = document.getElementById("unpaidList");
+
+      unpaidCountEl.textContent = unpaidStudents.length;
+      unpaidCountEl.className = "alert-count " + (unpaidStudents.length === 0 ? "green" : "red");
+
+      if (unpaidStudents.length === 0) {
+        unpaidListEl.innerHTML = `<div class="alert-empty">✓ All students fully funded</div>`;
+      } else {
+        const top5 = unpaidStudents.slice(0, 5);
+        let html = "";
+        for (const s of top5) {
+          html += `
+            <div class="alert-item">
+              <span class="addr" title="${s.addr}">${s.shortAddr}</span>
+              <span class="detail red">${s.escrow} / ${s.owed}</span>
+            </div>
+          `;
+        }
+        if (unpaidStudents.length > 5) {
+          html += `<div class="alert-empty">+${unpaidStudents.length - 5} more</div>`;
+        }
+        unpaidListEl.innerHTML = html;
+      }
+
+      // ── No CU Assigned panel ──
+      const noCuCountEl = document.getElementById("noCuCount");
+      const noCuListEl = document.getElementById("noCuList");
+
+      noCuCountEl.textContent = noCuStudents.length;
+      noCuCountEl.className = "alert-count " + (noCuStudents.length === 0 ? "green" : "amber");
+
+      if (noCuStudents.length === 0) {
+        noCuListEl.innerHTML = `<div class="alert-empty">✓ All students have CU assigned</div>`;
+      } else {
+        const top5 = noCuStudents.slice(0, 5);
+        let html = "";
+        for (const s of top5) {
+          html += `
+            <div class="alert-item">
+              <span class="addr" title="${s.addr}">${s.shortAddr}</span>
+              <span class="detail amber">0 CU</span>
+            </div>
+          `;
+        }
+        if (noCuStudents.length > 5) {
+          html += `<div class="alert-empty">+${noCuStudents.length - 5} more</div>`;
+        }
+        noCuListEl.innerHTML = html;
+      }
     }
 
     // ================================================================
