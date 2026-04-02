@@ -674,9 +674,10 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label>Amount (USDC)</label>
-                <input type="number" id="depositAmount" min="0" step="0.000001" placeholder="e.g. 50" />
+                <label>Amount (USDC) — max: <span id="depositMax" class="mono">—</span></label>
+                <input type="number" id="depositAmount" min="0" step="0.000001" placeholder="e.g. 500" />
               </div>
+              <button class="btn btn-secondary" onclick="fillMaxDeposit()" style="align-self:flex-end;">Fill</button>
               <button class="btn btn-primary" id="btnDeposit" onclick="deposit()">Deposit</button>
             </div>
 
@@ -760,7 +761,7 @@
       "function escrowBalance(address) view returns (uint256)",
       "function calculateFees(address) view returns (uint256)",
       "function calculateFeesInJPY(address) view returns (uint256)",
-      "function getStatus(address) view returns (bool isWhitelisted, bool isDeposited, bool isPaid, uint256 balance)",
+      "function getStatus(address) view returns (bool isWhitelisted, bool isDeposited, bool isPaid, uint256 balance, uint256 nextDepositAllowed)",
       "function deposit(uint256 amount)",
       "function withdrawExcess()",
       "function emergencyWithdraw()",
@@ -861,6 +862,12 @@
         document.getElementById("infoOwed").textContent =
           "$" + ethers.formatUnits(fees, 6);
 
+        // Update deposit max label and store for Fill button
+        const maxDeposit = fees > balance ? fees - balance : 0n;
+        window._maxDeposit = maxDeposit;
+        document.getElementById("depositMax").textContent =
+          "$" + ethers.formatUnits(maxDeposit, 6);
+
         if (isPaid) {
           document.getElementById("infoDepositStatus").innerHTML =
             '<span class="badge badge-green">Paid</span>';
@@ -880,10 +887,9 @@
             '<span class="badge badge-amber">Pending</span>';
 
           // Show shortfall
-          const shortfall = fees > balance ? fees - balance : 0n;
-          if (shortfall > 0n) {
+          if (maxDeposit > 0n) {
             document.getElementById("shortfallAmount").textContent =
-              ethers.formatUnits(shortfall, 6);
+              ethers.formatUnits(maxDeposit, 6);
             document.getElementById("shortfallRow").style.display = "block";
           }
         }
@@ -941,6 +947,13 @@
     // ================================================================
     //  STUDENT ACTIONS
     // ================================================================
+    function fillMaxDeposit() {
+      if (window._maxDeposit && window._maxDeposit > 0n) {
+        document.getElementById("depositAmount").value =
+          ethers.formatUnits(window._maxDeposit, 6);
+      }
+    }
+
     async function deposit() {
       const raw = document.getElementById("depositAmount").value.trim();
       if (!raw || isNaN(parseFloat(raw)) || parseFloat(raw) <= 0) {

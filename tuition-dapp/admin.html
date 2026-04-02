@@ -785,10 +785,15 @@
         </div>
         <div class="section-body">
           <div class="section-content">
-            <div style="display: flex; gap: 0.75rem;">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
               <button class="btn btn-danger" onclick="pauseContract()">Pause Contract</button>
               <button class="btn btn-primary" onclick="unpauseContract()">Unpause Contract</button>
+              <button class="btn btn-secondary" onclick="resetSemester()">Reset Semester</button>
             </div>
+            <p style="margin-top:0.75rem; font-size:0.82rem; color:var(--text-dim);">
+              <strong>Reset Semester</strong> clears all payment statuses so a new payment date can be set.
+              Run this at the start of each new semester.
+            </p>
           </div>
         </div>
       </div>
@@ -832,11 +837,12 @@
       "function escrowBalance(address) view returns (uint256)",
       "function creditUnits(address) view returns (uint256)",
       "function calculateFees(address) view returns (uint256)",
-      "function checkSufficient(address) view returns (bool)",
+      "function getStatus(address) view returns (bool isWhitelisted, bool isDeposited, bool isPaid, uint256 balance, uint256 nextDepositAllowed)",
       "function whitelistStudent(address student, bytes32 studentHash)",
       "function setCreditUnits(address student, uint256 units)",
       "function setPaymentDate(uint256 _date)",
       "function executePayment(address[] students)",
+      "function batchResetPayments(address[] students)",
       "function pause()",
       "function unpause()",
     ];
@@ -956,37 +962,50 @@
       const noCuStudents = [];     // { addr, shortAddr }
 
       for (const addr of students) {
-        const cu = await tuitionContract.creditUnits(addr);
-        const owed = await tuitionContract.calculateFees(addr);
-        const escrow = await tuitionContract.escrowBalance(addr);
-        const sufficient = await tuitionContract.checkSufficient(addr);
+        try {
+          const cu = await tuitionContract.creditUnits(addr);
+          const owed = await tuitionContract.calculateFees(addr);
+          const [, isDeposited, isPaid, escrow] = await tuitionContract.getStatus(addr);
 
-        const cuNum = Number(cu);
-        const owedStr = "$" + ethers.formatUnits(owed, 6);
-        const escrowStr = "$" + ethers.formatUnits(escrow, 6);
-        const shortAddr = addr.slice(0, 6) + "..." + addr.slice(-4);
+          const cuNum = Number(cu);
+          const owedStr = "$" + ethers.formatUnits(owed, 6);
+          const escrowStr = "$" + ethers.formatUnits(escrow, 6);
+          const shortAddr = addr.slice(0, 6) + "..." + addr.slice(-4);
 
-        let badge;
-        if (cuNum === 0) {
-          badge = `<span class="badge badge-red">No CU</span>`;
-          noCuStudents.push({ addr, shortAddr });
-        } else if (sufficient) {
-          badge = `<span class="badge badge-green">Ready</span>`;
-        } else {
-          badge = `<span class="badge badge-amber">Pending</span>`;
-          unpaidStudents.push({ addr, shortAddr, owed: owedStr, escrow: escrowStr });
+          let badge;
+          if (isPaid) {
+            badge = `<span class="badge badge-green">Paid</span>`;
+          } else if (cuNum === 0) {
+            badge = `<span class="badge badge-red">No CU</span>`;
+            noCuStudents.push({ addr, shortAddr });
+          } else if (isDeposited) {
+            badge = `<span class="badge badge-green">Ready</span>`;
+          } else {
+            badge = `<span class="badge badge-amber">Pending</span>`;
+            unpaidStudents.push({ addr, shortAddr, owed: owedStr, escrow: escrowStr });
+          }
+
+          rows += `
+            <tr>
+              <td><input type="checkbox" class="student-cb" value="${addr}" ${isDeposited && !isPaid ? "" : "disabled"} /></td>
+              <td class="addr" title="${addr}">${shortAddr}</td>
+              <td class="mono">${cuNum}</td>
+              <td class="mono">${owedStr}</td>
+              <td class="mono">${escrowStr}</td>
+              <td>${badge}</td>
+            </tr>
+          `;
+        } catch (rowErr) {
+          console.error("Error loading student", addr, rowErr);
+          const shortAddr = addr.slice(0, 6) + "..." + addr.slice(-4);
+          rows += `
+            <tr>
+              <td></td>
+              <td class="addr" title="${addr}">${shortAddr}</td>
+              <td colspan="4" style="color:var(--red)">Failed to load</td>
+            </tr>
+          `;
         }
-
-        rows += `
-          <tr>
-            <td><input type="checkbox" class="student-cb" value="${addr}" ${sufficient ? "" : "disabled"} /></td>
-            <td class="addr" title="${addr}">${shortAddr}</td>
-            <td class="mono">${cuNum}</td>
-            <td class="mono">${owedStr}</td>
-            <td class="mono">${escrowStr}</td>
-            <td>${badge}</td>
-          </tr>
-        `;
       }
 
       tbody.innerHTML = rows;
@@ -1124,10 +1143,16 @@
       }
 
       const timestamp = Math.floor(new Date(dateStr).getTime() / 1000);
-      const now = Math.floor(Date.now() / 1000);
 
-      if (timestamp <= now) {
-        toast("Payment date must be in the future", "error");
+      // Validate against chain time, not browser clock (they diverge after evm_increaseTime)
+      const block = await provider.getBlock("latest");
+      const chainNow = Number(block.timestamp);
+
+      if (timestamp <= chainNow) {
+        toast(
+          "Date must be after chain time: " + new Date(chainNow * 1000).toLocaleString(),
+          "error"
+        );
         return;
       }
 
@@ -1188,6 +1213,24 @@
         toast("Contract unpaused", "success");
       } catch (err) {
         toast("Unpause failed: " + parseError(err), "error");
+      }
+    }
+
+    async function resetSemester() {
+      const students = CONFIG.KNOWN_STUDENTS;
+      if (students.length === 0) {
+        toast("No students to reset", "error");
+        return;
+      }
+      try {
+        toast("Resetting semester payment statuses...", "info");
+        const tx = await tuitionContract.batchResetPayments(students);
+        await tx.wait();
+        toast("Semester reset — you can now set a new payment date", "success");
+        await refreshDashboard();
+      } catch (err) {
+        console.error(err);
+        toast("Reset failed: " + parseError(err), "error");
       }
     }
 
