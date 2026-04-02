@@ -3,18 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TuitionPay — Admin Console</title>
-
-  <!-- Fonts -->
+  <title>TuitionPay — Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
-  <!-- ethers.js v6 from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
-
   <style>
-    /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -34,6 +28,8 @@
       --red-bg:    #2a0a0a;
       --amber:     #f59e0b;
       --amber-bg:  #1a1505;
+      --blue-dim:  #1e3a5f;
+      --blue-text: #93c5fd;
       --mono:      'DM Mono', monospace;
       --sans:      'DM Sans', system-ui, sans-serif;
       --radius:    10px;
@@ -50,1220 +46,1199 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Layout ── */
-    .app {
-      max-width: 880px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem 4rem;
-    }
+    .app { max-width: 980px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
     /* ── Header ── */
     .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2.5rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
     }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
+    .logo { display: flex; align-items: center; gap: 0.6rem; }
     .logo-icon {
-      width: 36px;
-      height: 36px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.85rem;
-      color: #fff;
-      letter-spacing: -0.5px;
+      width: 34px; height: 34px; background: var(--accent); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.8rem; color: #fff; letter-spacing: -0.5px;
     }
+    .logo h1 { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.3px; }
+    .logo h1 span { color: var(--text-dim); font-weight: 400; margin-left: 0.3rem; }
 
-    .logo h1 {
-      font-size: 1.2rem;
-      font-weight: 600;
-      letter-spacing: -0.3px;
-    }
-
-    .logo h1 span {
-      color: var(--text-dim);
-      font-weight: 400;
-      margin-left: 0.3rem;
-    }
-
-    /* ── Connect Button ── */
     .btn-connect {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.55rem 1.1rem;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      font-family: var(--sans);
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 1rem; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text); font-family: var(--sans); font-size: 0.82rem;
+      font-weight: 500; cursor: pointer; transition: all 0.2s;
     }
+    .btn-connect:hover { border-color: var(--accent); background: var(--surface-2); }
+    .btn-connect.connected { border-color: var(--green); background: var(--green-bg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-mute); }
+    .btn-connect.connected .dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
 
-    .btn-connect:hover {
-      border-color: var(--accent);
-      background: var(--surface-2);
+    /* ── Paused Banner ── */
+    .paused-banner {
+      display: none; background: var(--red-bg); border: 1px solid var(--red);
+      border-radius: var(--radius); padding: 0.75rem 1.2rem; margin-bottom: 1.5rem;
+      color: var(--red); font-size: 0.85rem; font-weight: 500;
     }
+    .paused-banner.show { display: block; }
 
-    .btn-connect.connected {
-      border-color: var(--green);
-      background: var(--green-bg);
-    }
-
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--text-mute);
-    }
-
-    .btn-connect.connected .dot {
-      background: var(--green);
-      box-shadow: 0 0 6px var(--green);
-    }
-
-    /* ── Login Screen ── */
+    /* ── Login ── */
     .login-screen {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 60vh;
-      text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 60vh; text-align: center;
     }
-
     .login-screen .shield {
-      width: 72px;
-      height: 72px;
-      border-radius: 18px;
+      width: 72px; height: 72px; border-radius: 18px;
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      margin-bottom: 1.5rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin-bottom: 1.5rem;
       box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
     }
-
-    .login-screen h2 {
-      font-size: 1.6rem;
-      font-weight: 600;
-      letter-spacing: -0.5px;
-      margin-bottom: 0.5rem;
-    }
-
-    .login-screen p {
-      color: var(--text-dim);
-      font-size: 0.95rem;
-      max-width: 380px;
-      margin-bottom: 2rem;
-    }
-
+    .login-screen h2 { font-size: 1.6rem; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 0.5rem; }
+    .login-screen p { color: var(--text-dim); font-size: 0.95rem; max-width: 380px; margin-bottom: 2rem; }
     .btn-login {
-      padding: 0.75rem 2rem;
-      border-radius: var(--radius);
-      border: none;
-      background: var(--accent);
-      color: #fff;
-      font-family: var(--sans);
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
+      padding: 0.75rem 2rem; border-radius: var(--radius); border: none;
+      background: var(--accent); color: #fff; font-family: var(--sans);
+      font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
       box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
     }
+    .btn-login:hover { background: var(--accent-2); transform: translateY(-1px); }
 
-    .btn-login:hover {
-      background: var(--accent-2);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 24px rgba(59, 130, 246, 0.4);
-    }
-
-    /* ── Dashboard ── */
     .dashboard { display: none; }
     .dashboard.active { display: block; }
     .login-screen.hidden { display: none; }
 
-    /* ── Stats Row ── */
+    /* ── Stats ── */
     .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-      margin-bottom: 2rem;
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem; margin-bottom: 1.75rem;
     }
-
     .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.1rem 1.3rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.9rem 1.1rem;
     }
-
     .stat-card .label {
-      font-size: 0.75rem;
-      color: var(--text-mute);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 500;
-      margin-bottom: 0.35rem;
+      font-size: 0.68rem; color: var(--text-mute); text-transform: uppercase;
+      letter-spacing: 0.5px; font-weight: 500; margin-bottom: 0.3rem;
     }
-
     .stat-card .value {
-      font-family: var(--mono);
-      font-size: 1.3rem;
-      font-weight: 500;
-      letter-spacing: -0.5px;
+      font-family: var(--mono); font-size: 1.05rem; font-weight: 500;
+      letter-spacing: -0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+    .stat-card .value.green  { color: var(--green); }
+    .stat-card .value.amber  { color: var(--amber); }
+    .stat-card .value.red    { color: var(--red); }
+    .stat-card .sub { font-size: 0.7rem; color: var(--text-mute); margin-top: 0.15rem; font-family: var(--mono); }
 
-    .stat-card .value.green { color: var(--green); }
-    .stat-card .value.amber { color: var(--amber); }
-
-    /* ── Alert Panels ── */
-    .alert-panels {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      margin-bottom: 2rem;
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;
     }
-
-    .alert-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
+    .tab {
+      padding: 0.65rem 1.2rem; font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; border: none; border-bottom: 2px solid transparent;
+      color: var(--text-dim); transition: all 0.15s; margin-bottom: -1px;
+      background: none; font-family: var(--sans);
     }
+    .tab:hover:not(.active) { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-    .alert-panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.8rem 1.1rem;
-      border-bottom: 1px solid var(--border);
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden;
     }
-
-    .alert-panel-header h4 {
-      font-size: 0.78rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border);
     }
+    .card-header h3 { font-size: 0.88rem; font-weight: 600; }
+    .card-header .hint { font-size: 0.75rem; color: var(--text-mute); font-family: var(--mono); }
+    .card-body { padding: 1.2rem; }
 
-    .alert-count {
-      font-family: var(--mono);
-      font-size: 0.7rem;
-      padding: 0.1rem 0.45rem;
-      border-radius: 4px;
-      font-weight: 600;
-    }
+    .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
 
-    .alert-count.red {
-      background: var(--red-bg);
-      color: var(--red);
-      border: 1px solid #7f1d1d;
-    }
-
-    .alert-count.amber {
-      background: var(--amber-bg);
-      color: var(--amber);
-      border: 1px solid #713f12;
-    }
-
-    .alert-count.green {
-      background: var(--green-bg);
-      color: var(--green);
-      border: 1px solid #166534;
-    }
-
-    .alert-panel-body {
-      padding: 0;
-    }
-
-    .alert-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.55rem 1.1rem;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.8rem;
-    }
-
-    .alert-item:last-child {
-      border-bottom: none;
-    }
-
-    .alert-item:hover {
-      background: var(--surface-2);
-    }
-
-    .alert-item .addr {
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      color: var(--text-dim);
-    }
-
-    .alert-item .detail {
-      font-family: var(--mono);
-      font-size: 0.75rem;
-    }
-
-    .alert-item .detail.red { color: var(--red); }
-    .alert-item .detail.amber { color: var(--amber); }
-
-    .alert-empty {
-      padding: 1rem 1.1rem;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-mute);
-    }
-
-    /* ── Sections ── */
-    .section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 1.25rem;
-      overflow: hidden;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 1.3rem;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .section-header:hover {
-      background: var(--surface-2);
-    }
-
-    .section-header h3 {
-      font-size: 0.9rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .section-header .chevron {
-      font-size: 0.7rem;
-      color: var(--text-mute);
-      transition: transform 0.2s;
-    }
-
-    .section.open .chevron {
-      transform: rotate(180deg);
-    }
-
-    .section-body {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-    }
-
-    .section.open .section-body {
-      max-height: 600px;
-    }
-
-    .section-content {
-      padding: 1.3rem;
-    }
-
-    /* ── Form Elements ── */
-    .form-row {
-      display: flex;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-      align-items: flex-end;
-    }
-
-    .form-group {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
-
+    /* ── Forms ── */
+    .form-row { display: flex; gap: 0.65rem; margin-bottom: 0.75rem; align-items: flex-end; }
+    .form-group { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
     .form-group label {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
+      font-size: 0.7rem; color: var(--text-dim); font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.3px;
     }
-
     .form-group input,
-    .form-group select {
-      padding: 0.6rem 0.8rem;
-      border-radius: 7px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      outline: none;
-      transition: border-color 0.2s;
+    .form-group select,
+    .form-group textarea {
+      padding: 0.55rem 0.75rem; border-radius: 7px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-family: var(--mono); font-size: 0.82rem;
+      outline: none; transition: border-color 0.2s; width: 100%;
     }
-
+    .form-group textarea { resize: vertical; min-height: 82px; }
     .form-group input:focus,
-    .form-group select:focus {
-      border-color: var(--accent);
-    }
+    .form-group select:focus,
+    .form-group textarea:focus { border-color: var(--accent); }
+    .form-group input::placeholder,
+    .form-group textarea::placeholder { color: var(--text-mute); }
+    .form-hint { font-size: 0.7rem; color: var(--text-mute); margin-top: 0.2rem; }
 
-    .form-group input::placeholder {
-      color: var(--text-mute);
-    }
-
+    /* ── Buttons ── */
     .btn {
-      padding: 0.6rem 1.2rem;
-      border-radius: 7px;
-      border: none;
-      font-family: var(--sans);
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
+      padding: 0.55rem 1.1rem; border-radius: 7px; border: none;
+      font-family: var(--sans); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
     }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-2); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--border-hl); }
+    .btn-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid #713f12; }
+    .btn-amber:hover { background: #2a1f08; }
+    .btn-sm { padding: 0.28rem 0.6rem; font-size: 0.72rem; }
+    .btn-row { display: flex; gap: 0.65rem; flex-wrap: wrap; }
 
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
-    .btn-primary:hover {
-      background: var(--accent-2);
-    }
-    .btn-primary:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .btn-danger {
-      background: var(--red);
-      color: #fff;
-    }
-    .btn-danger:hover {
-      background: #dc2626;
-    }
-
-    /* ── Student Table ── */
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
     th {
-      text-align: left;
-      font-size: 0.7rem;
-      color: var(--text-mute);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 600;
-      padding: 0.6rem 1rem;
-      border-bottom: 1px solid var(--border);
+      text-align: left; font-size: 0.68rem; color: var(--text-mute);
+      text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+      padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border);
     }
-
     td {
-      padding: 0.75rem 1rem;
-      font-size: 0.85rem;
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle;
+      padding: 0.65rem 0.9rem; font-size: 0.82rem;
+      border-bottom: 1px solid var(--border); vertical-align: middle;
     }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    tr:hover td {
-      background: var(--surface-2);
-    }
-
-    .addr {
-      font-family: var(--mono);
-      font-size: 0.78rem;
-      color: var(--text-dim);
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 0.15rem 0.55rem;
-      border-radius: 5px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    .badge-green {
-      background: var(--green-bg);
-      color: var(--green);
-      border: 1px solid #166534;
-    }
-
-    .badge-amber {
-      background: var(--amber-bg);
-      color: var(--amber);
-      border: 1px solid #713f12;
-    }
-
-    .badge-red {
-      background: var(--red-bg);
-      color: var(--red);
-      border: 1px solid #7f1d1d;
-    }
-
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface-2); }
     .mono { font-family: var(--mono); }
+    .addr { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); }
+    .row-actions { display: flex; gap: 0.4rem; }
 
-    /* ── Toast Notifications ── */
-    .toast-container {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      z-index: 999;
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: 0.12rem 0.5rem; border-radius: 5px;
+      font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
     }
-
-    .toast {
-      padding: 0.8rem 1.2rem;
-      border-radius: var(--radius);
-      font-size: 0.82rem;
-      font-weight: 500;
-      max-width: 380px;
-      animation: slideIn 0.25s ease;
-      border: 1px solid;
-    }
-
-    .toast-success {
-      background: var(--green-bg);
-      color: var(--green);
-      border-color: #166534;
-    }
-
-    .toast-error {
-      background: var(--red-bg);
-      color: var(--red);
-      border-color: #7f1d1d;
-    }
-
-    .toast-info {
-      background: var(--surface-2);
-      color: var(--text);
-      border-color: var(--border-hl);
-    }
-
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to   { transform: translateX(0); opacity: 1; }
-    }
+    .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid #166534; }
+    .badge-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid #713f12; }
+    .badge-red   { background: var(--red-bg);   color: var(--red);   border: 1px solid #7f1d1d; }
+    .badge-blue  { background: var(--blue-dim);  color: var(--blue-text); border: 1px solid var(--border-hl); }
 
     /* ── Checkbox ── */
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+    input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
 
-    .checkbox-row input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--accent);
-      cursor: pointer;
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+    /* ── Toast ── */
+    .toast-container {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      display: flex; flex-direction: column; gap: 0.5rem; z-index: 999;
     }
+    .toast {
+      padding: 0.75rem 1.1rem; border-radius: var(--radius); font-size: 0.8rem;
+      font-weight: 500; max-width: 360px; animation: slideIn 0.25s ease; border: 1px solid;
+    }
+    .toast-success { background: var(--green-bg); color: var(--green); border-color: #166534; }
+    .toast-error   { background: var(--red-bg);   color: var(--red);   border-color: #7f1d1d; }
+    .toast-info    { background: var(--surface-2); color: var(--text);  border-color: var(--border-hl); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
     /* ── Responsive ── */
-    @media (max-width: 640px) {
-      .stats { grid-template-columns: 1fr; }
-      .alert-panels { grid-template-columns: 1fr; }
-      .form-row { flex-direction: column; }
-      .header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+    @media (max-width: 760px) {
+      .stats      { grid-template-columns: repeat(3, 1fr); }
+      .card-grid  { grid-template-columns: 1fr; }
+      .form-row   { flex-direction: column; }
+      .header     { flex-direction: column; gap: 1rem; align-items: flex-start; }
+    }
+    @media (max-width: 480px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
-  <div class="app">
+<div class="app">
 
-    <!-- ── Header ── -->
-    <header class="header">
-      <div class="logo">
-        <div class="logo-icon">TP</div>
-        <h1>TuitionPay <span>Admin</span></h1>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">TP</div>
+      <h1>TuitionPay <span>Admin</span></h1>
+    </div>
+    <button class="btn-connect" id="btnConnect" onclick="connectWallet()">
+      <span class="dot"></span>
+      <span id="connectLabel">Connect Wallet</span>
+    </button>
+  </header>
+
+  <!-- Paused Banner -->
+  <div class="paused-banner" id="pausedBanner">
+    ⚠️ Contract is PAUSED — Deposits and payment execution are disabled.
+    Students can call emergencyWithdraw() to reclaim their escrow.
+  </div>
+
+  <!-- Login Screen -->
+  <div class="login-screen" id="loginScreen">
+    <div class="shield">🔐</div>
+    <h2>Admin Console</h2>
+    <p>Connect your admin wallet to access the tuition payment management system.</p>
+    <button class="btn-login" onclick="connectWallet()">Connect with MetaMask</button>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboard">
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="label">Fee / Credit Unit</div>
+        <div class="value" id="statFee">—</div>
       </div>
-      <button class="btn-connect" id="btnConnect" onclick="connectWallet()">
-        <span class="dot"></span>
-        <span id="connectLabel">Connect Wallet</span>
-      </button>
-    </header>
-
-    <!-- ── Login Screen ── -->
-    <div class="login-screen" id="loginScreen">
-      <div class="shield">🔐</div>
-      <h2>Admin Console</h2>
-      <p>Connect your wallet to access the tuition payment management system. Only the admin wallet can interact with these controls.</p>
-      <button class="btn-login" onclick="connectWallet()">Connect with MetaMask</button>
+      <div class="stat-card">
+        <div class="label">Payment Date</div>
+        <div class="value amber" id="statDate">Not set</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">FX Rate (¥/$)</div>
+        <div class="value amber" id="statFx">Not locked</div>
+        <div class="sub" id="statFxSub"></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total in Escrow</div>
+        <div class="value green" id="statBalance">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Status</div>
+        <div class="value green" id="statStatus">Active</div>
+        <div class="sub" id="statStatusSub"></div>
+      </div>
     </div>
 
-    <!-- ── Dashboard ── -->
-    <div class="dashboard" id="dashboard">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="Students" onclick="switchTab(this)">Students</button>
+      <button class="tab" data-tab="Semester"  onclick="switchTab(this)">Semester Setup</button>
+      <button class="tab" data-tab="Config"    onclick="switchTab(this)">Configuration</button>
+    </div>
 
-      <!-- Stats -->
-      <div class="stats">
-        <div class="stat-card">
-          <div class="label">Fee Per Credit Unit</div>
-          <div class="value" id="statFee">—</div>
+    <!-- ══════════════ Tab: Students ══════════════ -->
+    <div class="tab-content active" id="tabStudents">
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Enrolled Students</h3>
+          <button class="btn btn-secondary btn-sm" onclick="refreshDashboard()">Refresh</button>
         </div>
-        <div class="stat-card">
-          <div class="label">Payment Date</div>
-          <div class="value amber" id="statDate">Not set</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Contract USDC</div>
-          <div class="value green" id="statBalance">—</div>
+        <div style="padding: 0;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Wallet</th>
+                  <th>CU</th>
+                  <th>Owed (USDC)</th>
+                  <th>Owed (JPY)</th>
+                  <th>Escrow</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentTableBody">
+                <tr>
+                  <td colspan="8" style="text-align:center; color:var(--text-mute); padding:2rem;">
+                    Connect wallet to load students
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- Alert Panels -->
-      <div class="alert-panels">
+      <div class="card-grid">
 
-        <!-- Insufficient Funds -->
-        <div class="alert-panel">
-          <div class="alert-panel-header">
-            <h4>⚠️ Insufficient Funds</h4>
-            <span class="alert-count red" id="unpaidCount">0</span>
-          </div>
-          <div class="alert-panel-body" id="unpaidList">
-            <div class="alert-empty">Loading...</div>
-          </div>
-        </div>
-
-        <!-- No CU Assigned -->
-        <div class="alert-panel">
-          <div class="alert-panel-header">
-            <h4>📌 No CU Assigned</h4>
-            <span class="alert-count amber" id="noCuCount">0</span>
-          </div>
-          <div class="alert-panel-body" id="noCuList">
-            <div class="alert-empty">Loading...</div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Section 1: Whitelist Student -->
-      <div class="section open" id="secWhitelist">
-        <div class="section-header" onclick="toggleSection('secWhitelist')">
-          <h3>📋 Whitelist Student</h3>
-          <span class="chevron">▼</span>
-        </div>
-        <div class="section-body">
-          <div class="section-content">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Wallet Address</label>
-                <input type="text" id="wlAddress" placeholder="0x..." />
-              </div>
-              <div class="form-group">
-                <label>Student ID</label>
-                <input type="text" id="wlStudentId" placeholder="STU-2026-003" />
-              </div>
-              <button class="btn btn-primary" onclick="whitelistStudent()">Whitelist</button>
+        <!-- Whitelist -->
+        <div class="card">
+          <div class="card-header"><h3>Whitelist Student</h3></div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom:0.65rem;">
+              <label>Wallet Address</label>
+              <input type="text" id="wlAddress" placeholder="0x..." />
             </div>
+            <div class="form-group" style="margin-bottom:0.75rem;">
+              <label>Student ID</label>
+              <input type="text" id="wlStudentId" placeholder="STU-2026-003" />
+            </div>
+            <button class="btn btn-primary" onclick="whitelistStudent()">Whitelist</button>
+
+            <hr class="divider" />
+
+            <div class="form-group" style="margin-bottom:0.75rem;">
+              <label>Batch Whitelist</label>
+              <textarea id="batchWlInput" placeholder="0xAbc...,STU-2026-004&#10;0xDef...,STU-2026-005"></textarea>
+              <span class="form-hint">One per line: address,studentId</span>
+            </div>
+            <button class="btn btn-secondary" onclick="batchWhitelist()">Batch Whitelist</button>
+          </div>
+        </div>
+
+        <!-- Set Credit Units -->
+        <div class="card">
+          <div class="card-header"><h3>Set Credit Units</h3></div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom:0.65rem;">
+              <label>Student Wallet</label>
+              <input type="text" id="cuAddress" placeholder="0x..." />
+            </div>
+            <div class="form-group" style="margin-bottom:0.75rem;">
+              <label>Credit Units (1–30)</label>
+              <input type="number" id="cuUnits" min="1" max="30" placeholder="4" />
+            </div>
+            <button class="btn btn-primary" onclick="setCreditUnits()">Assign</button>
+
+            <hr class="divider" />
+
+            <div class="form-group" style="margin-bottom:0.75rem;">
+              <label>Batch Set CU</label>
+              <textarea id="batchCuInput" placeholder="0xAbc...,4&#10;0xDef...,3"></textarea>
+              <span class="form-hint">One per line: address,creditUnits</span>
+            </div>
+            <button class="btn btn-secondary" onclick="batchSetCreditUnits()">Batch Set CU</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════ Tab: Semester Setup ══════════════ -->
+    <div class="tab-content" id="tabSemester">
+
+      <!-- Step 1: FX Rate -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Step 1 — Lock FX Rate</h3>
+          <span class="hint" id="fxRateDisplay">Not locked</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size:0.82rem; color:var(--text-dim); margin-bottom:0.9rem;">
+            Reads the live Chainlink JPY/USD rate and locks it for the semester.
+            Students will see their fees in JPY based on this rate.
+            Lock before opening the deposit window.
+          </p>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="lockFxRate()">Lock FX Rate</button>
+            <button class="btn btn-danger"  onclick="resetFxRate()">Reset Rate</button>
           </div>
         </div>
       </div>
 
-      <!-- Section 2: Assign Credit Units -->
-      <div class="section open" id="secCreditUnits">
-        <div class="section-header" onclick="toggleSection('secCreditUnits')">
-          <h3>🎓 Assign Credit Units</h3>
-          <span class="chevron">▼</span>
+      <!-- Step 2: Payment Date -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Step 2 — Set Payment Date</h3>
+          <span class="hint" id="paymentDateDisplay">Not set</span>
         </div>
-        <div class="section-body">
-          <div class="section-content">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Student Wallet</label>
-                <input type="text" id="cuAddress" placeholder="0x..." />
-              </div>
-              <div class="form-group" style="max-width: 120px;">
-                <label>Credit Units</label>
-                <input type="number" id="cuUnits" min="1" max="30" placeholder="4" />
-              </div>
-              <button class="btn btn-primary" onclick="setCreditUnits()">Assign</button>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Payment Deadline</label>
+              <input type="datetime-local" id="pdDate" />
             </div>
+            <button class="btn btn-primary" onclick="setPaymentDate()">Set Date</button>
           </div>
         </div>
       </div>
 
-      <!-- Section 3: Set Payment Date -->
-      <div class="section open" id="secPaymentDate">
-        <div class="section-header" onclick="toggleSection('secPaymentDate')">
-          <h3>📅 Set Payment Date</h3>
-          <span class="chevron">▼</span>
+      <!-- Step 3: Execute Payment -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Step 3 — Execute Payment</h3>
+          <span class="hint">Select students to pay the university</span>
         </div>
-        <div class="section-body">
-          <div class="section-content">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Payment Deadline</label>
-                <input type="datetime-local" id="pdDate" />
-              </div>
-              <button class="btn btn-primary" onclick="setPaymentDate()">Set Date</button>
-            </div>
+        <div style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:32px;"></th>
+                  <th>Wallet</th>
+                  <th>CU</th>
+                  <th>Owed (USDC)</th>
+                  <th>Escrow</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="execTableBody">
+                <tr>
+                  <td colspan="6" style="text-align:center; color:var(--text-mute); padding:1.5rem;">
+                    Loading...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;
+                      padding:0.9rem 1.2rem; border-top:1px solid var(--border);">
+            <label style="display:flex; align-items:center; gap:0.5rem;
+                           font-size:0.82rem; color:var(--text-dim); cursor:pointer;">
+              <input type="checkbox" id="selectAllExec" onchange="toggleSelectAll()" />
+              Select all eligible
+            </label>
+            <button class="btn btn-primary" onclick="executePayment()">Execute Payment</button>
           </div>
         </div>
       </div>
 
-      <!-- Section 4: Execute Payment -->
-      <div class="section open" id="secPayment">
-        <div class="section-header" onclick="toggleSection('secPayment')">
-          <h3>💸 Execute Payment</h3>
-          <span class="chevron">▼</span>
+      <!-- Step 4: New Semester -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Step 4 — New Semester</h3>
+          <span class="hint">Run after payments are executed</span>
         </div>
-        <div class="section-body">
-          <div class="section-content">
+        <div class="card-body">
+          <p style="font-size:0.82rem; color:var(--text-dim); margin-bottom:0.9rem;">
+            Resets all student payment statuses and allows
+            <code style="font-family:var(--mono); color:var(--text);">setPaymentDate()</code>
+            to be called again. Run this once you have confirmed all payments have been processed.
+          </p>
+          <button class="btn btn-amber" onclick="resetSemester()">Reset Semester</button>
+        </div>
+      </div>
 
-            <!-- Student overview table -->
-            <div class="table-wrap" style="margin-bottom: 1rem;">
-              <table>
-                <thead>
-                  <tr>
-                    <th style="width: 30px;"></th>
-                    <th>Wallet</th>
-                    <th>Credit Units</th>
-                    <th>Owed</th>
-                    <th>Escrow</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="studentTableBody">
-                  <tr><td colspan="6" style="text-align:center; color:var(--text-mute);">Loading students...</td></tr>
-                </tbody>
-              </table>
-            </div>
+    </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div class="checkbox-row">
-                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" />
-                <label for="selectAll" style="font-size:0.82rem; color:var(--text-dim); cursor:pointer;">Select all eligible</label>
-              </div>
-              <button class="btn btn-primary" id="btnExecute" onclick="executePayment()">Execute Payment</button>
+    <!-- ══════════════ Tab: Configuration ══════════════ -->
+    <div class="tab-content" id="tabConfig">
+
+      <!-- Financial -->
+      <div class="card">
+        <div class="card-header"><h3>Financial Settings</h3></div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Fee Per Credit Unit (USDC)</label>
+              <input type="number" id="cfgFee" placeholder="500" step="1" min="1" />
+              <span class="form-hint">Current: <span id="cfgFeeDisplay">—</span></span>
             </div>
+            <button class="btn btn-primary" onclick="setFeePerUnit()">Update Fee</button>
           </div>
         </div>
       </div>
 
-      <!-- Section 5: Pause / Unpause -->
-      <div class="section" id="secPause">
-        <div class="section-header" onclick="toggleSection('secPause')">
-          <h3>⚙️ Contract Controls</h3>
-          <span class="chevron">▼</span>
-        </div>
-        <div class="section-body">
-          <div class="section-content">
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-              <button class="btn btn-danger" onclick="pauseContract()">Pause Contract</button>
-              <button class="btn btn-primary" onclick="unpauseContract()">Unpause Contract</button>
-              <button class="btn btn-secondary" onclick="resetSemester()">Reset Semester</button>
+      <!-- Addresses -->
+      <div class="card">
+        <div class="card-header"><h3>Contract Addresses</h3></div>
+        <div class="card-body">
+          <div class="form-row" style="margin-bottom:1rem;">
+            <div class="form-group">
+              <label>University Wallet</label>
+              <input type="text" id="cfgUniWallet" placeholder="0x..." />
+              <span class="form-hint">Current: <span id="cfgUniWalletDisplay">—</span></span>
             </div>
-            <p style="margin-top:0.75rem; font-size:0.82rem; color:var(--text-dim);">
-              <strong>Reset Semester</strong> clears all payment statuses so a new payment date can be set.
-              Run this at the start of each new semester.
-            </p>
+            <button class="btn btn-primary" onclick="setUniversityWallet()">Update</button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Price Feed (Chainlink JPY/USD)</label>
+              <input type="text" id="cfgPriceFeed" placeholder="0x..." />
+            </div>
+            <button class="btn btn-secondary" onclick="setPriceFeed()">Update</button>
           </div>
         </div>
       </div>
 
-    </div><!-- /dashboard -->
-  </div><!-- /app -->
+      <!-- Emergency -->
+      <div class="card">
+        <div class="card-header"><h3>Emergency Controls</h3></div>
+        <div class="card-body">
+          <p style="font-size:0.82rem; color:var(--text-dim); margin-bottom:0.9rem;">
+            Pausing disables deposits and payment execution.
+            Students can call
+            <code style="font-family:var(--mono); color:var(--text);">emergencyWithdraw()</code>
+            to reclaim their escrow while the contract is paused.
+          </p>
+          <div class="btn-row">
+            <button class="btn btn-danger"  onclick="pauseContract()">Pause Contract</button>
+            <button class="btn btn-primary" onclick="unpauseContract()">Unpause Contract</button>
+          </div>
+        </div>
+      </div>
 
-  <!-- Toast container -->
-  <div class="toast-container" id="toasts"></div>
+    </div>
 
-  <script>
-    // ================================================================
-    //  CONFIG — Update these after running the deploy script
-    // ================================================================
-    const CONFIG = {
-      // After you run: npx hardhat run scripts/deploy.js --network localhost
-      // paste the printed addresses here:
-      TUITION_ADDRESS: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-      USDC_ADDRESS:    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  </div><!-- /dashboard -->
+</div><!-- /app -->
 
-      // Hardhat local node
-      RPC_URL: "http://127.0.0.1:8545",
+<div class="toast-container" id="toasts"></div>
 
-      // Known student addresses from deploy script (for the table)
-      // Add more as you whitelist them
-      KNOWN_STUDENTS: [
-        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",  // Account #1
-        "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",  // Account #2
-      ],
-    };
+<script>
+  // ════════════════════════════════════════════════════════
+  //  CONFIG — update after each deploy
+  // ════════════════════════════════════════════════════════
+  const CONFIG = {
+    TUITION_ADDRESS: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    USDC_ADDRESS:    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    RPC_URL:         "http://127.0.0.1:8545",
 
-    // ================================================================
-    //  ABI (only the functions we need)
-    // ================================================================
-    const TUITION_ABI = [
-      "function ADMIN_ROLE() view returns (bytes32)",
-      "function STUDENT_ROLE() view returns (bytes32)",
-      "function hasRole(bytes32 role, address account) view returns (bool)",
-      "function feePerUnit() view returns (uint256)",
-      "function paymentDate() view returns (uint256)",
-      "function escrowBalance(address) view returns (uint256)",
-      "function creditUnits(address) view returns (uint256)",
-      "function calculateFees(address) view returns (uint256)",
-      "function getStatus(address) view returns (bool isWhitelisted, bool isDeposited, bool isPaid, uint256 balance, uint256 nextDepositAllowed)",
-      "function whitelistStudent(address student, bytes32 studentHash)",
-      "function setCreditUnits(address student, uint256 units)",
-      "function setPaymentDate(uint256 _date)",
-      "function executePayment(address[] students)",
-      "function batchResetPayments(address[] students)",
-      "function pause()",
-      "function unpause()",
-    ];
+    // Pre-seeded on first load (only used when localStorage is empty for this contract).
+    // Update if you redeploy — these are the default Hardhat accounts #1 and #2.
+    INITIAL_STUDENTS: [
+      "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    ],
+  };
 
-    const USDC_ABI = [
-      "function balanceOf(address) view returns (uint256)",
-    ];
+  // ════════════════════════════════════════════════════════
+  //  ABI
+  // ════════════════════════════════════════════════════════
+  const TUITION_ABI = [
+    // Roles
+    "function ADMIN_ROLE() view returns (bytes32)",
+    "function STUDENT_ROLE() view returns (bytes32)",
+    "function hasRole(bytes32 role, address account) view returns (bool)",
+    // State getters
+    "function feePerUnit() view returns (uint256)",
+    "function paymentDate() view returns (uint256)",
+    "function lockedFxRate() view returns (uint256)",
+    "function universityWallet() view returns (address)",
+    "function paused() view returns (bool)",
+    "function paymentsExecutedThisSemester() view returns (bool)",
+    "function escrowBalance(address) view returns (uint256)",
+    "function creditUnits(address) view returns (uint256)",
+    // View helpers
+    "function calculateFees(address student) view returns (uint256)",
+    "function calculateFeesInJPY(address student) view returns (uint256)",
+    "function getStatus(address student) view returns (bool isWhitelisted, bool isDeposited, bool isPaid, uint256 balance, uint256 nextDepositAllowed)",
+    // Student management
+    "function whitelistStudent(address student, bytes32 studentHash)",
+    "function batchWhitelist(address[] students, bytes32[] hashes)",
+    "function removeStudent(address student)",
+    "function setCreditUnits(address student, uint256 units)",
+    "function batchSetCreditUnits(address[] students, uint256[] units)",
+    "function refundStudent(address student)",
+    // Semester
+    "function setPaymentDate(uint256 _date)",
+    "function lockFxRate()",
+    "function resetLockedFxRate()",
+    "function executePayment(address[] students)",
+    "function batchResetPayments(address[] students)",
+    // Configuration
+    "function setFeePerUnit(uint256 _newFee)",
+    "function setUniversityWallet(address _newWallet)",
+    "function setPriceFeed(address _newFeed)",
+    // Emergency
+    "function pause()",
+    "function unpause()",
+  ];
 
-    // ================================================================
-    //  STATE
-    // ================================================================
-    let provider = null;
-    let signer = null;
-    let tuitionContract = null;
-    let usdcContract = null;
-    let connectedAddress = null;
+  const USDC_ABI = [
+    "function balanceOf(address) view returns (uint256)",
+  ];
 
-    // ================================================================
-    //  WALLET CONNECTION
-    // ================================================================
-    async function connectWallet() {
-      if (!window.ethereum) {
-        toast("MetaMask not detected. Please install it.", "error");
+  // ════════════════════════════════════════════════════════
+  //  STATE
+  // ════════════════════════════════════════════════════════
+  let provider        = null;
+  let signer          = null;
+  let tuitionContract = null;
+  let usdcContract    = null;
+  let connectedAddress = null;
+
+  const STORAGE_KEY = `tuitionpay_students_${CONFIG.TUITION_ADDRESS.toLowerCase()}`;
+
+  function loadStudents() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (stored.length === 0 && CONFIG.INITIAL_STUDENTS.length > 0) {
+        saveStudents(CONFIG.INITIAL_STUDENTS);
+        return CONFIG.INITIAL_STUDENTS;
+      }
+      return stored;
+    } catch { return []; }
+  }
+
+  function saveStudents(list) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function addStudentToList(addr) {
+    const list = loadStudents();
+    if (!list.map(a => a.toLowerCase()).includes(addr.toLowerCase())) {
+      list.push(addr);
+      saveStudents(list);
+    }
+  }
+
+  function removeStudentFromList(addr) {
+    const list = loadStudents().filter(a => a.toLowerCase() !== addr.toLowerCase());
+    saveStudents(list);
+  }
+
+  // ════════════════════════════════════════════════════════
+  //  WALLET
+  // ════════════════════════════════════════════════════════
+  async function connectWallet() {
+    if (!window.ethereum) { toast("MetaMask not detected.", "error"); return; }
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+      provider        = new ethers.BrowserProvider(window.ethereum);
+      signer          = await provider.getSigner();
+      connectedAddress = await signer.getAddress();
+
+      tuitionContract = new ethers.Contract(CONFIG.TUITION_ADDRESS, TUITION_ABI, signer);
+      usdcContract    = new ethers.Contract(CONFIG.USDC_ADDRESS, USDC_ABI, provider);
+
+      const adminRole = await tuitionContract.ADMIN_ROLE();
+      const isAdmin   = await tuitionContract.hasRole(adminRole, connectedAddress);
+      if (!isAdmin) {
+        toast("Connected wallet does not have ADMIN_ROLE.", "error");
         return;
       }
 
-      try {
-        // Request account access
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
+      const btn = document.getElementById("btnConnect");
+      btn.classList.add("connected");
+      document.getElementById("connectLabel").textContent =
+        fmtAddr(connectedAddress);
 
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        connectedAddress = await signer.getAddress();
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("dashboard").classList.add("active");
 
-        // Setup contracts
-        tuitionContract = new ethers.Contract(CONFIG.TUITION_ADDRESS, TUITION_ABI, signer);
-        usdcContract = new ethers.Contract(CONFIG.USDC_ADDRESS, USDC_ABI, provider);
-
-        // Verify admin role
-        const adminRole = await tuitionContract.ADMIN_ROLE();
-        const isAdmin = await tuitionContract.hasRole(adminRole, connectedAddress);
-
-        if (!isAdmin) {
-          toast("Connected wallet is not an admin. Access denied.", "error");
-          return;
-        }
-
-        // Update UI
-        const btn = document.getElementById("btnConnect");
-        btn.classList.add("connected");
-        document.getElementById("connectLabel").textContent =
-          connectedAddress.slice(0, 6) + "..." + connectedAddress.slice(-4);
-
-        document.getElementById("loginScreen").classList.add("hidden");
-        document.getElementById("dashboard").classList.add("active");
-
-        toast("Connected as admin", "success");
-
-        // Load dashboard data
-        await refreshDashboard();
-
-      } catch (err) {
-        console.error(err);
-        toast("Connection failed: " + (err.reason || err.message), "error");
-      }
+      toast("Connected as admin", "success");
+      await refreshDashboard();
+    } catch (err) {
+      console.error(err);
+      toast("Connection failed: " + parseError(err), "error");
     }
+  }
 
-    // Listen for account changes
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", () => location.reload());
-      window.ethereum.on("chainChanged", () => location.reload());
-    }
+  if (window.ethereum) {
+    window.ethereum.on("accountsChanged", () => location.reload());
+    window.ethereum.on("chainChanged",    () => location.reload());
+  }
 
-    // ================================================================
-    //  DASHBOARD DATA
-    // ================================================================
-    async function refreshDashboard() {
-      try {
-        // Fee per unit
-        const feeRaw = await tuitionContract.feePerUnit();
-        document.getElementById("statFee").textContent =
-          "$" + ethers.formatUnits(feeRaw, 6);
+  // ════════════════════════════════════════════════════════
+  //  TABS
+  // ════════════════════════════════════════════════════════
+  function switchTab(el) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+    el.classList.add("active");
+    document.getElementById("tab" + el.dataset.tab).classList.add("active");
+  }
 
-        // Payment date
-        const pdRaw = await tuitionContract.paymentDate();
-        const pd = Number(pdRaw);
-        document.getElementById("statDate").textContent =
-          pd === 0 ? "Not set" : new Date(pd * 1000).toLocaleString();
+  // ════════════════════════════════════════════════════════
+  //  DASHBOARD
+  // ════════════════════════════════════════════════════════
+  async function refreshDashboard() {
+    if (!tuitionContract) return;
+    await Promise.all([refreshStats(), refreshStudentTable()]);
+  }
 
-        // Contract USDC balance
-        const bal = await usdcContract.balanceOf(CONFIG.TUITION_ADDRESS);
-        document.getElementById("statBalance").textContent =
-          "$" + ethers.formatUnits(bal, 6);
+  async function refreshStats() {
+    try {
+      const [feeRaw, pdRaw, fxRaw, usdcBal, isPaused, semExec, uniWallet] = await Promise.all([
+        tuitionContract.feePerUnit(),
+        tuitionContract.paymentDate(),
+        tuitionContract.lockedFxRate(),
+        usdcContract.balanceOf(CONFIG.TUITION_ADDRESS),
+        tuitionContract.paused(),
+        tuitionContract.paymentsExecutedThisSemester(),
+        tuitionContract.universityWallet(),
+      ]);
 
-        // Student table + alert panels
-        await refreshStudentTable();
+      // Fee
+      document.getElementById("statFee").textContent =
+        "$" + Number(ethers.formatUnits(feeRaw, 6)).toLocaleString();
 
-      } catch (err) {
-        console.error("Dashboard refresh error:", err);
-      }
-    }
+      // Payment date
+      const pd = Number(pdRaw);
+      const dateEl = document.getElementById("statDate");
+      dateEl.textContent = pd === 0 ? "Not set" : new Date(pd * 1000).toLocaleDateString();
+      dateEl.className   = "value " + (pd === 0 ? "amber" : "");
+      document.getElementById("paymentDateDisplay").textContent =
+        pd === 0 ? "Not set" : new Date(pd * 1000).toLocaleString();
 
-    async function refreshStudentTable() {
-      const tbody = document.getElementById("studentTableBody");
-      const students = CONFIG.KNOWN_STUDENTS;
-
-      if (students.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-mute);">No students registered</td></tr>`;
-        updateAlertPanels([], []);
-        return;
-      }
-
-      let rows = "";
-      const unpaidStudents = [];   // { addr, shortAddr, owed, escrow }
-      const noCuStudents = [];     // { addr, shortAddr }
-
-      for (const addr of students) {
-        try {
-          const cu = await tuitionContract.creditUnits(addr);
-          const owed = await tuitionContract.calculateFees(addr);
-          const [, isDeposited, isPaid, escrow] = await tuitionContract.getStatus(addr);
-
-          const cuNum = Number(cu);
-          const owedStr = "$" + ethers.formatUnits(owed, 6);
-          const escrowStr = "$" + ethers.formatUnits(escrow, 6);
-          const shortAddr = addr.slice(0, 6) + "..." + addr.slice(-4);
-
-          let badge;
-          if (isPaid) {
-            badge = `<span class="badge badge-green">Paid</span>`;
-          } else if (cuNum === 0) {
-            badge = `<span class="badge badge-red">No CU</span>`;
-            noCuStudents.push({ addr, shortAddr });
-          } else if (isDeposited) {
-            badge = `<span class="badge badge-green">Ready</span>`;
-          } else {
-            badge = `<span class="badge badge-amber">Pending</span>`;
-            unpaidStudents.push({ addr, shortAddr, owed: owedStr, escrow: escrowStr });
-          }
-
-          rows += `
-            <tr>
-              <td><input type="checkbox" class="student-cb" value="${addr}" ${isDeposited && !isPaid ? "" : "disabled"} /></td>
-              <td class="addr" title="${addr}">${shortAddr}</td>
-              <td class="mono">${cuNum}</td>
-              <td class="mono">${owedStr}</td>
-              <td class="mono">${escrowStr}</td>
-              <td>${badge}</td>
-            </tr>
-          `;
-        } catch (rowErr) {
-          console.error("Error loading student", addr, rowErr);
-          const shortAddr = addr.slice(0, 6) + "..." + addr.slice(-4);
-          rows += `
-            <tr>
-              <td></td>
-              <td class="addr" title="${addr}">${shortAddr}</td>
-              <td colspan="4" style="color:var(--red)">Failed to load</td>
-            </tr>
-          `;
-        }
-      }
-
-      tbody.innerHTML = rows;
-      updateAlertPanels(unpaidStudents, noCuStudents);
-    }
-
-    function updateAlertPanels(unpaidStudents, noCuStudents) {
-      // ── Insufficient Funds panel ──
-      const unpaidCountEl = document.getElementById("unpaidCount");
-      const unpaidListEl = document.getElementById("unpaidList");
-
-      unpaidCountEl.textContent = unpaidStudents.length;
-      unpaidCountEl.className = "alert-count " + (unpaidStudents.length === 0 ? "green" : "red");
-
-      if (unpaidStudents.length === 0) {
-        unpaidListEl.innerHTML = `<div class="alert-empty">✓ All students fully funded</div>`;
+      // FX Rate
+      const fx = Number(fxRaw);
+      const fxEl    = document.getElementById("statFx");
+      const fxSubEl = document.getElementById("statFxSub");
+      const fxDisplayEl = document.getElementById("fxRateDisplay");
+      if (fx === 0) {
+        fxEl.textContent    = "Not locked";
+        fxEl.className      = "value amber";
+        fxSubEl.textContent = "";
+        fxDisplayEl.textContent = "Not locked";
       } else {
-        const top5 = unpaidStudents.slice(0, 5);
-        let html = "";
-        for (const s of top5) {
-          html += `
-            <div class="alert-item">
-              <span class="addr" title="${s.addr}">${s.shortAddr}</span>
-              <span class="detail red">${s.escrow} / ${s.owed}</span>
-            </div>
-          `;
-        }
-        if (unpaidStudents.length > 5) {
-          html += `<div class="alert-empty">+${unpaidStudents.length - 5} more</div>`;
-        }
-        unpaidListEl.innerHTML = html;
+        const jpyPerUsd = (1e8 / fx).toFixed(2);
+        fxEl.textContent    = "¥" + Number(jpyPerUsd).toLocaleString();
+        fxEl.className      = "value";
+        fxSubEl.textContent = "per $1 USDC";
+        fxDisplayEl.textContent = `¥${Number(jpyPerUsd).toLocaleString()} / $1`;
       }
 
-      // ── No CU Assigned panel ──
-      const noCuCountEl = document.getElementById("noCuCount");
-      const noCuListEl = document.getElementById("noCuList");
+      // Escrow balance
+      document.getElementById("statBalance").textContent =
+        "$" + Number(ethers.formatUnits(usdcBal, 6)).toLocaleString();
 
-      noCuCountEl.textContent = noCuStudents.length;
-      noCuCountEl.className = "alert-count " + (noCuStudents.length === 0 ? "green" : "amber");
-
-      if (noCuStudents.length === 0) {
-        noCuListEl.innerHTML = `<div class="alert-empty">✓ All students have CU assigned</div>`;
+      // Contract status
+      const statusEl    = document.getElementById("statStatus");
+      const statusSubEl = document.getElementById("statStatusSub");
+      const banner      = document.getElementById("pausedBanner");
+      if (isPaused) {
+        statusEl.textContent    = "PAUSED";
+        statusEl.className      = "value red";
+        statusSubEl.textContent = "";
+        banner.classList.add("show");
+      } else if (semExec) {
+        statusEl.textContent    = "Executed";
+        statusEl.className      = "value amber";
+        statusSubEl.textContent = "Reset to continue";
+        banner.classList.remove("show");
       } else {
-        const top5 = noCuStudents.slice(0, 5);
-        let html = "";
-        for (const s of top5) {
-          html += `
-            <div class="alert-item">
-              <span class="addr" title="${s.addr}">${s.shortAddr}</span>
-              <span class="detail amber">0 CU</span>
-            </div>
-          `;
+        statusEl.textContent    = "Active";
+        statusEl.className      = "value green";
+        statusSubEl.textContent = "";
+        banner.classList.remove("show");
+      }
+
+      // Config tab
+      document.getElementById("cfgFeeDisplay").textContent =
+        "$" + Number(ethers.formatUnits(feeRaw, 6)).toLocaleString() + " USDC";
+      document.getElementById("cfgUniWalletDisplay").textContent =
+        uniWallet.slice(0, 8) + "..." + uniWallet.slice(-6);
+
+    } catch (err) {
+      console.error("Stats error:", err);
+    }
+  }
+
+  async function refreshStudentTable() {
+    const students = loadStudents();
+    await Promise.all([
+      renderStudentTable(students),
+      renderExecTable(students),
+    ]);
+  }
+
+  async function renderStudentTable(students) {
+    const tbody = document.getElementById("studentTableBody");
+    if (students.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-mute);padding:2rem;">
+        No students registered. Whitelist students below.</td></tr>`;
+      return;
+    }
+
+    const fxRaw    = await tuitionContract.lockedFxRate();
+    const fxLocked = Number(fxRaw) > 0;
+
+    let rows = "";
+    for (let i = 0; i < students.length; i++) {
+      const addr = students[i];
+      try {
+        const [cu, owed, status] = await Promise.all([
+          tuitionContract.creditUnits(addr),
+          tuitionContract.calculateFees(addr),
+          tuitionContract.getStatus(addr),
+        ]);
+        const [, isDeposited, isPaid, escrow] = status;
+        const cuNum = Number(cu);
+
+        let jpyStr = "—";
+        if (fxLocked && cuNum > 0) {
+          try {
+            const jpy = await tuitionContract.calculateFeesInJPY(addr);
+            jpyStr = "¥" + Number(jpy).toLocaleString();
+          } catch { /* FX locked but call failed — show dash */ }
         }
-        if (noCuStudents.length > 5) {
-          html += `<div class="alert-empty">+${noCuStudents.length - 5} more</div>`;
-        }
-        noCuListEl.innerHTML = html;
+
+        let badge;
+        if (isPaid)           badge = `<span class="badge badge-green">Paid</span>`;
+        else if (cuNum === 0) badge = `<span class="badge badge-red">No CU</span>`;
+        else if (isDeposited) badge = `<span class="badge badge-blue">Ready</span>`;
+        else                  badge = `<span class="badge badge-amber">Pending</span>`;
+
+        const hasEscrow = Number(escrow) > 0;
+        const owedFmt   = "$" + Number(ethers.formatUnits(owed,   6)).toLocaleString();
+        const escrowFmt = "$" + Number(ethers.formatUnits(escrow, 6)).toLocaleString();
+
+        rows += `
+          <tr>
+            <td class="mono" style="color:var(--text-mute)">${i + 1}</td>
+            <td><span class="addr" title="${addr}">${fmtAddr(addr)}</span></td>
+            <td class="mono">${cuNum}</td>
+            <td class="mono">${owedFmt}</td>
+            <td class="mono">${jpyStr}</td>
+            <td class="mono">${escrowFmt}</td>
+            <td>${badge}</td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-secondary btn-sm"
+                  onclick="refundStudentAction('${addr}')"
+                  ${hasEscrow ? "" : "disabled"}
+                  title="${hasEscrow ? "Refund escrow to student" : "No escrow balance"}">
+                  Refund
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="removeStudentAction('${addr}')">
+                  Remove
+                </button>
+              </div>
+            </td>
+          </tr>`;
+      } catch (rowErr) {
+        console.error("Row error", addr, rowErr);
+        rows += `
+          <tr>
+            <td class="mono" style="color:var(--text-mute)">${i + 1}</td>
+            <td><span class="addr" title="${addr}">${fmtAddr(addr)}</span></td>
+            <td colspan="5" style="color:var(--red); font-size:0.78rem;">Failed to load data</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="removeStudentAction('${addr}')">Remove</button>
+            </td>
+          </tr>`;
       }
     }
+    tbody.innerHTML = rows;
+  }
 
-    // ================================================================
-    //  ADMIN ACTIONS
-    // ================================================================
-    async function whitelistStudent() {
-      const address = document.getElementById("wlAddress").value.trim();
-      const studentId = document.getElementById("wlStudentId").value.trim();
-
-      if (!ethers.isAddress(address)) {
-        toast("Invalid wallet address", "error");
-        return;
-      }
-      if (!studentId) {
-        toast("Student ID is required", "error");
-        return;
-      }
-
+  async function renderExecTable(students) {
+    const tbody = document.getElementById("execTableBody");
+    if (students.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-mute);padding:1.5rem;">
+        No students registered</td></tr>`;
+      return;
+    }
+    let rows = "";
+    for (const addr of students) {
       try {
-        toast("Submitting whitelist transaction...", "info");
-        const studentHash = ethers.keccak256(
-          ethers.solidityPacked(["string"], [studentId])
-        );
-        const tx = await tuitionContract.whitelistStudent(address, studentHash);
-        await tx.wait();
+        const [cu, owed, status] = await Promise.all([
+          tuitionContract.creditUnits(addr),
+          tuitionContract.calculateFees(addr),
+          tuitionContract.getStatus(addr),
+        ]);
+        const [, isDeposited, isPaid, escrow] = status;
+        const cuNum    = Number(cu);
+        const eligible = isDeposited && !isPaid;
 
-        // Add to known students if not already there
-        if (!CONFIG.KNOWN_STUDENTS.includes(address)) {
-          CONFIG.KNOWN_STUDENTS.push(address);
-        }
+        let badge;
+        if (isPaid)           badge = `<span class="badge badge-green">Paid</span>`;
+        else if (cuNum === 0) badge = `<span class="badge badge-red">No CU</span>`;
+        else if (isDeposited) badge = `<span class="badge badge-blue">Ready</span>`;
+        else                  badge = `<span class="badge badge-amber">Pending</span>`;
 
-        toast(`Whitelisted ${address.slice(0, 8)}...`, "success");
-        document.getElementById("wlAddress").value = "";
-        document.getElementById("wlStudentId").value = "";
-        await refreshDashboard();
-
-      } catch (err) {
-        console.error(err);
-        toast("Whitelist failed: " + parseError(err), "error");
+        rows += `
+          <tr>
+            <td><input type="checkbox" class="exec-cb" value="${addr}" ${eligible ? "" : "disabled"} /></td>
+            <td><span class="addr" title="${addr}">${fmtAddr(addr)}</span></td>
+            <td class="mono">${cuNum}</td>
+            <td class="mono">$${Number(ethers.formatUnits(owed,   6)).toLocaleString()}</td>
+            <td class="mono">$${Number(ethers.formatUnits(escrow, 6)).toLocaleString()}</td>
+            <td>${badge}</td>
+          </tr>`;
+      } catch {
+        rows += `
+          <tr>
+            <td></td>
+            <td><span class="addr" title="${addr}">${fmtAddr(addr)}</span></td>
+            <td colspan="4" style="color:var(--red); font-size:0.78rem;">Failed to load</td>
+          </tr>`;
       }
     }
+    tbody.innerHTML = rows;
+  }
 
-    async function setCreditUnits() {
-      const address = document.getElementById("cuAddress").value.trim();
-      const units = parseInt(document.getElementById("cuUnits").value);
+  // ════════════════════════════════════════════════════════
+  //  STUDENT MANAGEMENT
+  // ════════════════════════════════════════════════════════
+  async function whitelistStudent() {
+    const addr      = document.getElementById("wlAddress").value.trim();
+    const studentId = document.getElementById("wlStudentId").value.trim();
+    if (!ethers.isAddress(addr)) { toast("Invalid address", "error"); return; }
+    if (!studentId)              { toast("Student ID is required", "error"); return; }
+    try {
+      toast("Submitting...", "info");
+      const hash = ethers.keccak256(ethers.solidityPacked(["string"], [studentId]));
+      const tx   = await tuitionContract.whitelistStudent(addr, hash);
+      await tx.wait();
+      addStudentToList(addr);
+      document.getElementById("wlAddress").value   = "";
+      document.getElementById("wlStudentId").value = "";
+      toast("Student whitelisted", "success");
+      await refreshDashboard();
+    } catch (err) { toast("Failed: " + parseError(err), "error"); }
+  }
 
-      if (!ethers.isAddress(address)) {
-        toast("Invalid wallet address", "error");
-        return;
-      }
-      if (isNaN(units) || units < 1 || units > 30) {
-        toast("Credit units must be between 1 and 30", "error");
-        return;
-      }
-
-      try {
-        toast("Submitting credit units transaction...", "info");
-        const tx = await tuitionContract.setCreditUnits(address, units);
-        await tx.wait();
-
-        toast(`Set ${units} credit units for ${address.slice(0, 8)}...`, "success");
-        document.getElementById("cuAddress").value = "";
-        document.getElementById("cuUnits").value = "";
-        await refreshDashboard();
-
-      } catch (err) {
-        console.error(err);
-        toast("Set CU failed: " + parseError(err), "error");
-      }
+  async function batchWhitelist() {
+    const raw = document.getElementById("batchWlInput").value.trim();
+    if (!raw) { toast("Input is empty", "error"); return; }
+    const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
+    const students = [], hashes = [];
+    for (const line of lines) {
+      const [addr, id] = line.split(",").map(s => s.trim());
+      if (!ethers.isAddress(addr)) { toast(`Invalid address: ${addr}`, "error"); return; }
+      if (!id)                     { toast(`Missing student ID for: ${addr}`, "error"); return; }
+      students.push(addr);
+      hashes.push(ethers.keccak256(ethers.solidityPacked(["string"], [id])));
     }
+    try {
+      toast(`Whitelisting ${students.length} students...`, "info");
+      const tx = await tuitionContract.batchWhitelist(students, hashes);
+      await tx.wait();
+      students.forEach(addStudentToList);
+      document.getElementById("batchWlInput").value = "";
+      toast(`${students.length} students whitelisted`, "success");
+      await refreshDashboard();
+    } catch (err) { toast("Batch whitelist failed: " + parseError(err), "error"); }
+  }
 
-    async function setPaymentDate() {
-      const dateStr = document.getElementById("pdDate").value;
-      if (!dateStr) {
-        toast("Please select a date and time", "error");
-        return;
+  async function removeStudentAction(addr) {
+    let msg = `Remove student ${fmtAddr(addr)}?\n\nThis revokes their STUDENT_ROLE and clears their data.`;
+    try {
+      const escrow = await tuitionContract.escrowBalance(addr);
+      const amt    = Number(ethers.formatUnits(escrow, 6));
+      if (amt > 0) {
+        msg = `Student ${fmtAddr(addr)} has $${amt.toFixed(2)} USDC in escrow.\n\n`
+            + `Refund them first to avoid locking their funds.\n\nRemove anyway?`;
       }
+    } catch {}
+    if (!confirm(msg)) return;
+    try {
+      toast("Removing student...", "info");
+      const tx = await tuitionContract.removeStudent(addr);
+      await tx.wait();
+      removeStudentFromList(addr);
+      toast("Student removed", "success");
+      await refreshDashboard();
+    } catch (err) { toast("Remove failed: " + parseError(err), "error"); }
+  }
 
-      const timestamp = Math.floor(new Date(dateStr).getTime() / 1000);
+  async function setCreditUnits() {
+    const addr  = document.getElementById("cuAddress").value.trim();
+    const units = parseInt(document.getElementById("cuUnits").value);
+    if (!ethers.isAddress(addr))                     { toast("Invalid address", "error"); return; }
+    if (isNaN(units) || units < 1 || units > 30)     { toast("Units must be 1–30", "error"); return; }
+    try {
+      toast("Assigning credit units...", "info");
+      const tx = await tuitionContract.setCreditUnits(addr, units);
+      await tx.wait();
+      document.getElementById("cuAddress").value = "";
+      document.getElementById("cuUnits").value   = "";
+      toast(`${units} CU assigned to ${fmtAddr(addr)}`, "success");
+      await refreshDashboard();
+    } catch (err) { toast("Failed: " + parseError(err), "error"); }
+  }
 
-      // Validate against chain time, not browser clock (they diverge after evm_increaseTime)
-      const block = await provider.getBlock("latest");
-      const chainNow = Number(block.timestamp);
-
-      if (timestamp <= chainNow) {
-        toast(
-          "Date must be after chain time: " + new Date(chainNow * 1000).toLocaleString(),
-          "error"
-        );
-        return;
-      }
-
-      try {
-        toast("Setting payment date...", "info");
-        const tx = await tuitionContract.setPaymentDate(timestamp);
-        await tx.wait();
-
-        toast("Payment date set to " + new Date(dateStr).toLocaleString(), "success");
-        document.getElementById("pdDate").value = "";
-        await refreshDashboard();
-
-      } catch (err) {
-        console.error(err);
-        toast("Set date failed: " + parseError(err), "error");
-      }
+  async function batchSetCreditUnits() {
+    const raw = document.getElementById("batchCuInput").value.trim();
+    if (!raw) { toast("Input is empty", "error"); return; }
+    const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
+    const students = [], units = [];
+    for (const line of lines) {
+      const [addr, u] = line.split(",").map(s => s.trim());
+      const unitVal   = parseInt(u);
+      if (!ethers.isAddress(addr))                   { toast(`Invalid address: ${addr}`, "error"); return; }
+      if (isNaN(unitVal) || unitVal < 1 || unitVal > 30) { toast(`Invalid CU for ${addr}`, "error"); return; }
+      students.push(addr);
+      units.push(unitVal);
     }
+    try {
+      toast(`Setting CU for ${students.length} students...`, "info");
+      const tx = await tuitionContract.batchSetCreditUnits(students, units);
+      await tx.wait();
+      document.getElementById("batchCuInput").value = "";
+      toast(`Credit units set for ${students.length} students`, "success");
+      await refreshDashboard();
+    } catch (err) { toast("Batch CU failed: " + parseError(err), "error"); }
+  }
 
-    async function executePayment() {
-      const checkboxes = document.querySelectorAll(".student-cb:checked");
-      const addresses = Array.from(checkboxes).map((cb) => cb.value);
+  async function refundStudentAction(addr) {
+    try {
+      const escrow = await tuitionContract.escrowBalance(addr);
+      const amt    = Number(ethers.formatUnits(escrow, 6));
+      if (!confirm(`Refund $${amt.toFixed(2)} USDC to ${fmtAddr(addr)}?`)) return;
+      toast("Processing refund...", "info");
+      const tx = await tuitionContract.refundStudent(addr);
+      await tx.wait();
+      toast(`Refunded $${amt.toFixed(2)} to ${fmtAddr(addr)}`, "success");
+      await refreshDashboard();
+    } catch (err) { toast("Refund failed: " + parseError(err), "error"); }
+  }
 
-      if (addresses.length === 0) {
-        toast("Select at least one student", "error");
-        return;
-      }
+  // ════════════════════════════════════════════════════════
+  //  SEMESTER SETUP
+  // ════════════════════════════════════════════════════════
+  async function lockFxRate() {
+    if (!confirm("Lock the current Chainlink JPY/USD rate for this semester?")) return;
+    try {
+      toast("Locking FX rate...", "info");
+      const tx = await tuitionContract.lockFxRate();
+      await tx.wait();
+      toast("FX rate locked", "success");
+      await refreshStats();
+    } catch (err) { toast("Lock failed: " + parseError(err), "error"); }
+  }
 
-      try {
-        toast(`Executing payment for ${addresses.length} student(s)...`, "info");
-        const tx = await tuitionContract.executePayment(addresses);
-        await tx.wait();
+  async function resetFxRate() {
+    if (!confirm("Reset the locked FX rate?\n\nStudents will not see JPY fees until you lock a new rate.")) return;
+    try {
+      toast("Resetting FX rate...", "info");
+      const tx = await tuitionContract.resetLockedFxRate();
+      await tx.wait();
+      toast("FX rate cleared", "success");
+      await refreshStats();
+    } catch (err) { toast("Reset failed: " + parseError(err), "error"); }
+  }
 
-        toast(`Payment executed for ${addresses.length} student(s)`, "success");
-        await refreshDashboard();
-
-      } catch (err) {
-        console.error(err);
-        toast("Payment failed: " + parseError(err), "error");
-      }
+  async function setPaymentDate() {
+    const dateStr = document.getElementById("pdDate").value;
+    if (!dateStr) { toast("Select a date and time", "error"); return; }
+    const timestamp = Math.floor(new Date(dateStr).getTime() / 1000);
+    const block     = await provider.getBlock("latest");
+    if (timestamp <= Number(block.timestamp)) {
+      toast("Date must be after the current chain time", "error");
+      return;
     }
+    try {
+      toast("Setting payment date...", "info");
+      const tx = await tuitionContract.setPaymentDate(timestamp);
+      await tx.wait();
+      document.getElementById("pdDate").value = "";
+      toast("Payment date set: " + new Date(dateStr).toLocaleString(), "success");
+      await refreshStats();
+    } catch (err) { toast("Failed: " + parseError(err), "error"); }
+  }
 
-    async function pauseContract() {
-      try {
-        toast("Pausing contract...", "info");
-        const tx = await tuitionContract.pause();
-        await tx.wait();
-        toast("Contract paused", "success");
-      } catch (err) {
-        toast("Pause failed: " + parseError(err), "error");
-      }
-    }
+  async function executePayment() {
+    const checked   = document.querySelectorAll(".exec-cb:checked");
+    const addresses = Array.from(checked).map(cb => cb.value);
+    if (addresses.length === 0) { toast("Select at least one student", "error"); return; }
+    if (!confirm(`Execute payment for ${addresses.length} student(s)?`)) return;
+    try {
+      toast(`Executing payment for ${addresses.length} student(s)...`, "info");
+      const tx = await tuitionContract.executePayment(addresses);
+      await tx.wait();
+      toast("Payment executed", "success");
+      await refreshDashboard();
+    } catch (err) { toast("Payment failed: " + parseError(err), "error"); }
+  }
 
-    async function unpauseContract() {
-      try {
-        toast("Unpausing contract...", "info");
-        const tx = await tuitionContract.unpause();
-        await tx.wait();
-        toast("Contract unpaused", "success");
-      } catch (err) {
-        toast("Unpause failed: " + parseError(err), "error");
-      }
-    }
+  async function resetSemester() {
+    const students = loadStudents();
+    if (students.length === 0) { toast("No students to reset", "error"); return; }
+    if (!confirm(`Reset semester for ${students.length} student(s)?\n\nThis clears all payment statuses and allows setting a new payment date.`)) return;
+    try {
+      toast("Resetting semester...", "info");
+      const tx = await tuitionContract.batchResetPayments(students);
+      await tx.wait();
+      toast("Semester reset — you can now set a new payment date", "success");
+      await refreshDashboard();
+    } catch (err) { toast("Reset failed: " + parseError(err), "error"); }
+  }
 
-    async function resetSemester() {
-      const students = CONFIG.KNOWN_STUDENTS;
-      if (students.length === 0) {
-        toast("No students to reset", "error");
-        return;
-      }
-      try {
-        toast("Resetting semester payment statuses...", "info");
-        const tx = await tuitionContract.batchResetPayments(students);
-        await tx.wait();
-        toast("Semester reset — you can now set a new payment date", "success");
-        await refreshDashboard();
-      } catch (err) {
-        console.error(err);
-        toast("Reset failed: " + parseError(err), "error");
-      }
-    }
+  // ════════════════════════════════════════════════════════
+  //  CONFIGURATION
+  // ════════════════════════════════════════════════════════
+  async function setFeePerUnit() {
+    const val = parseFloat(document.getElementById("cfgFee").value);
+    if (isNaN(val) || val <= 0) { toast("Enter a valid fee amount", "error"); return; }
+    const raw = ethers.parseUnits(val.toString(), 6);
+    if (!confirm(`Set fee per credit unit to $${val.toLocaleString()} USDC?`)) return;
+    try {
+      toast("Updating fee...", "info");
+      const tx = await tuitionContract.setFeePerUnit(raw);
+      await tx.wait();
+      document.getElementById("cfgFee").value = "";
+      toast(`Fee updated to $${val.toLocaleString()} per CU`, "success");
+      await refreshStats();
+    } catch (err) { toast("Failed: " + parseError(err), "error"); }
+  }
 
-    // ================================================================
-    //  UI HELPERS
-    // ================================================================
-    function toggleSection(id) {
-      document.getElementById(id).classList.toggle("open");
-    }
+  async function setUniversityWallet() {
+    const addr = document.getElementById("cfgUniWallet").value.trim();
+    if (!ethers.isAddress(addr)) { toast("Invalid address", "error"); return; }
+    if (!confirm(`Update university wallet to ${fmtAddr(addr)}?`)) return;
+    try {
+      toast("Updating wallet...", "info");
+      const tx = await tuitionContract.setUniversityWallet(addr);
+      await tx.wait();
+      document.getElementById("cfgUniWallet").value = "";
+      toast("University wallet updated", "success");
+      await refreshStats();
+    } catch (err) { toast("Failed: " + parseError(err), "error"); }
+  }
 
-    function toggleSelectAll() {
-      const checked = document.getElementById("selectAll").checked;
-      document.querySelectorAll(".student-cb:not(:disabled)").forEach((cb) => {
-        cb.checked = checked;
-      });
-    }
+  async function setPriceFeed() {
+    const addr = document.getElementById("cfgPriceFeed").value.trim();
+    if (!ethers.isAddress(addr)) { toast("Invalid address", "error"); return; }
+    if (!confirm(`Update price feed to ${fmtAddr(addr)}?\n\nMust be a JPY/USD Chainlink feed.`)) return;
+    try {
+      toast("Updating price feed...", "info");
+      const tx = await tuitionContract.setPriceFeed(addr);
+      await tx.wait();
+      document.getElementById("cfgPriceFeed").value = "";
+      toast("Price feed updated", "success");
+    } catch (err) { toast("Failed: " + parseError(err), "error"); }
+  }
 
-    function toast(msg, type = "info") {
-      const container = document.getElementById("toasts");
-      const el = document.createElement("div");
-      el.className = `toast toast-${type}`;
-      el.textContent = msg;
-      container.appendChild(el);
-      setTimeout(() => el.remove(), 4000);
-    }
+  async function pauseContract() {
+    if (!confirm("Pause the contract?\n\nDeposits and payments will be disabled. Students can emergency withdraw.")) return;
+    try {
+      toast("Pausing contract...", "info");
+      const tx = await tuitionContract.pause();
+      await tx.wait();
+      toast("Contract paused", "success");
+      await refreshStats();
+    } catch (err) { toast("Failed: " + parseError(err), "error"); }
+  }
 
-    function parseError(err) {
-      if (err.reason) return err.reason;
-      if (err.data?.message) return err.data.message;
-      if (err.message?.includes("reverted"))
-        return err.message.split("reverted with reason string '")[1]?.split("'")[0] || err.message;
-      return err.message || "Unknown error";
-    }
-  </script>
+  async function unpauseContract() {
+    if (!confirm("Unpause the contract?")) return;
+    try {
+      toast("Unpausing contract...", "info");
+      const tx = await tuitionContract.unpause();
+      await tx.wait();
+      toast("Contract unpaused", "success");
+      await refreshStats();
+    } catch (err) { toast("Failed: " + parseError(err), "error"); }
+  }
+
+  // ════════════════════════════════════════════════════════
+  //  HELPERS
+  // ════════════════════════════════════════════════════════
+  function toggleSelectAll() {
+    const checked = document.getElementById("selectAllExec").checked;
+    document.querySelectorAll(".exec-cb:not(:disabled)").forEach(cb => cb.checked = checked);
+  }
+
+  function fmtAddr(addr) {
+    return addr.slice(0, 6) + "..." + addr.slice(-4);
+  }
+
+  function toast(msg, type = "info") {
+    const container = document.getElementById("toasts");
+    const el = document.createElement("div");
+    el.className  = `toast toast-${type}`;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  function parseError(err) {
+    if (err.reason)               return err.reason;
+    if (err.shortMessage)         return err.shortMessage;
+    if (err.info?.error?.message) return err.info.error.message;
+    if (err.data?.message)        return err.data.message;
+    const msg   = err.message || "Unknown error";
+    const match = msg.match(/reason="([^"]+)"/);
+    if (match) return match[1];
+    return msg.length > 120 ? msg.slice(0, 120) + "..." : msg;
+  }
+</script>
 </body>
 </html>

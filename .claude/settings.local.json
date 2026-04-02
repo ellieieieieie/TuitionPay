@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npx hardhat:*)",
-      "Bash(node_modules/.bin/hardhat compile:*)"
+      "Bash(node_modules/.bin/hardhat compile:*)",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(taskkill /F /IM node.exe)"
     ]
   }
 }
