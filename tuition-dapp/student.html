@@ -4,19 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TuitionPay — Student Portal</title>
-
+ 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
+ 
   <!-- ethers.js v6 from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
-
+ 
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+ 
     :root {
       --bg:        #0a0e17;
       --surface:   #111827;
@@ -38,9 +38,9 @@
       --sans:      'DM Sans', system-ui, sans-serif;
       --radius:    10px;
     }
-
+ 
     html { font-size: 15px; }
-
+ 
     body {
       font-family: var(--sans);
       background: var(--bg);
@@ -49,14 +49,14 @@
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
-
+ 
     /* ── Layout ── */
     .app {
       max-width: 880px;
       margin: 0 auto;
       padding: 2rem 1.5rem 4rem;
     }
-
+ 
     /* ── Header ── */
     .header {
       display: flex;
@@ -66,13 +66,13 @@
       padding-bottom: 1.5rem;
       border-bottom: 1px solid var(--border);
     }
-
+ 
     .logo {
       display: flex;
       align-items: center;
       gap: 0.6rem;
     }
-
+ 
     .logo-icon {
       width: 36px;
       height: 36px;
@@ -86,19 +86,19 @@
       color: #fff;
       letter-spacing: -0.5px;
     }
-
+ 
     .logo h1 {
       font-size: 1.2rem;
       font-weight: 600;
       letter-spacing: -0.3px;
     }
-
+ 
     .logo h1 span {
       color: var(--text-dim);
       font-weight: 400;
       margin-left: 0.3rem;
     }
-
+ 
     /* ── Connect Button ── */
     .btn-connect {
       display: flex;
@@ -115,29 +115,29 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-
+ 
     .btn-connect:hover {
       border-color: var(--accent);
       background: var(--surface-2);
     }
-
+ 
     .btn-connect.connected {
       border-color: var(--green);
       background: var(--green-bg);
     }
-
+ 
     .dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
       background: var(--text-mute);
     }
-
+ 
     .btn-connect.connected .dot {
       background: var(--green);
       box-shadow: 0 0 6px var(--green);
     }
-
+ 
     /* ── Login Screen ── */
     .login-screen {
       display: flex;
@@ -147,7 +147,7 @@
       min-height: 60vh;
       text-align: center;
     }
-
+ 
     .login-screen .shield {
       width: 72px;
       height: 72px;
@@ -160,21 +160,21 @@
       margin-bottom: 1.5rem;
       box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
     }
-
+ 
     .login-screen h2 {
       font-size: 1.6rem;
       font-weight: 600;
       letter-spacing: -0.5px;
       margin-bottom: 0.5rem;
     }
-
+ 
     .login-screen p {
       color: var(--text-dim);
       font-size: 0.95rem;
       max-width: 380px;
       margin-bottom: 2rem;
     }
-
+ 
     .btn-login {
       padding: 0.75rem 2rem;
       border-radius: var(--radius);
@@ -188,18 +188,18 @@
       transition: all 0.2s;
       box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
     }
-
+ 
     .btn-login:hover {
       background: var(--accent-2);
       transform: translateY(-1px);
       box-shadow: 0 6px 24px rgba(59, 130, 246, 0.4);
     }
-
+ 
     /* ── Dashboard ── */
     .dashboard { display: none; }
     .dashboard.active { display: block; }
     .login-screen.hidden { display: none; }
-
+ 
     /* ── Paused Banner ── */
     .paused-banner {
       display: none;
@@ -209,26 +209,26 @@
       padding: 1rem 1.3rem;
       margin-bottom: 1.5rem;
     }
-
+ 
     .paused-banner.active { display: flex; align-items: center; gap: 1rem; }
-
+ 
     .paused-banner .banner-icon { font-size: 1.4rem; flex-shrink: 0; }
-
+ 
     .paused-banner .banner-text { flex: 1; }
-
+ 
     .paused-banner .banner-text strong {
       display: block;
       color: var(--red);
       font-size: 0.9rem;
       margin-bottom: 0.2rem;
     }
-
+ 
     .paused-banner .banner-text p {
       color: var(--text-dim);
       font-size: 0.82rem;
       line-height: 1.4;
     }
-
+ 
     /* ── Journey Stepper ── */
     .stepper {
       display: flex;
@@ -240,7 +240,7 @@
       padding: 1.2rem 1.5rem;
       gap: 0;
     }
-
+ 
     .step {
       display: flex;
       flex-direction: column;
@@ -248,7 +248,7 @@
       flex: 1;
       position: relative;
     }
-
+ 
     .step-icon {
       width: 36px;
       height: 36px;
@@ -264,18 +264,18 @@
       z-index: 1;
       transition: all 0.3s;
     }
-
+ 
     .step.done .step-icon {
       border-color: var(--green);
       background: var(--green-bg);
     }
-
+ 
     .step.active .step-icon {
       border-color: var(--accent);
       background: #0f2044;
       box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
     }
-
+ 
     .step-label {
       font-size: 0.72rem;
       color: var(--text-mute);
@@ -284,10 +284,10 @@
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
-
+ 
     .step.done .step-label { color: var(--green); }
     .step.active .step-label { color: var(--accent); }
-
+ 
     .step-connector {
       flex: 1;
       height: 2px;
@@ -295,9 +295,9 @@
       margin-bottom: 1.35rem;
       transition: background 0.3s;
     }
-
+ 
     .step-connector.done { background: var(--green); }
-
+ 
     /* ── Stats Row ── */
     .stats {
       display: grid;
@@ -305,14 +305,14 @@
       gap: 1rem;
       margin-bottom: 2rem;
     }
-
+ 
     .stat-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.1rem 1.3rem;
     }
-
+ 
     .stat-card .label {
       font-size: 0.72rem;
       color: var(--text-mute);
@@ -321,25 +321,25 @@
       font-weight: 500;
       margin-bottom: 0.35rem;
     }
-
+ 
     .stat-card .value {
       font-family: var(--mono);
       font-size: 1.2rem;
       font-weight: 500;
       letter-spacing: -0.5px;
     }
-
+ 
     .stat-card .value.green  { color: var(--green); }
     .stat-card .value.amber  { color: var(--amber); }
     .stat-card .value.accent { color: var(--accent); }
     .stat-card .value.red    { color: var(--red); }
-
+ 
     .stat-card .sub {
       font-size: 0.72rem;
       color: var(--text-mute);
       margin-top: 0.2rem;
     }
-
+ 
     /* ── Sections ── */
     .section {
       background: var(--surface);
@@ -348,7 +348,7 @@
       margin-bottom: 1.25rem;
       overflow: hidden;
     }
-
+ 
     .section-header {
       display: flex;
       justify-content: space-between;
@@ -358,9 +358,9 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-
+ 
     .section-header:hover { background: var(--surface-2); }
-
+ 
     .section-header h3 {
       font-size: 0.9rem;
       font-weight: 600;
@@ -368,25 +368,25 @@
       align-items: center;
       gap: 0.5rem;
     }
-
+ 
     .section-header .chevron {
       font-size: 0.7rem;
       color: var(--text-mute);
       transition: transform 0.2s;
     }
-
+ 
     .section.open .chevron { transform: rotate(180deg); }
-
+ 
     .section-body {
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease;
     }
-
+ 
     .section.open .section-body { max-height: 700px; }
-
+ 
     .section-content { padding: 1.3rem; }
-
+ 
     /* ── Form Elements ── */
     .form-row {
       display: flex;
@@ -394,14 +394,14 @@
       margin-bottom: 1rem;
       align-items: flex-end;
     }
-
+ 
     .form-group {
       flex: 1;
       display: flex;
       flex-direction: column;
       gap: 0.3rem;
     }
-
+ 
     .form-group label {
       font-size: 0.75rem;
       color: var(--text-dim);
@@ -409,7 +409,7 @@
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
-
+ 
     .form-group input {
       padding: 0.6rem 0.8rem;
       border-radius: 7px;
@@ -421,10 +421,10 @@
       outline: none;
       transition: border-color 0.2s;
     }
-
+ 
     .form-group input:focus { border-color: var(--accent); }
     .form-group input::placeholder { color: var(--text-mute); }
-
+ 
     .btn {
       padding: 0.6rem 1.2rem;
       border-radius: 7px;
@@ -436,27 +436,25 @@
       transition: all 0.15s;
       white-space: nowrap;
     }
-
+ 
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover { background: var(--accent-2); }
     .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-
+ 
     .btn-danger { background: var(--red); color: #fff; }
     .btn-danger:hover { background: #dc2626; }
     .btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
-
+ 
     .btn-secondary {
       background: var(--surface-2);
       color: var(--text);
       border: 1px solid var(--border);
     }
     .btn-secondary:hover { border-color: var(--accent); }
-
+ 
     /* ── Deposit Progress Bar ── */
-    .progress-wrap {
-      margin-bottom: 1.25rem;
-    }
-
+    .progress-wrap { margin-bottom: 1.25rem; }
+ 
     .progress-header {
       display: flex;
       justify-content: space-between;
@@ -465,9 +463,9 @@
       color: var(--text-dim);
       margin-bottom: 0.5rem;
     }
-
+ 
     .progress-header strong { color: var(--text); font-family: var(--mono); }
-
+ 
     .progress-track {
       height: 8px;
       background: var(--surface-2);
@@ -475,16 +473,16 @@
       border-radius: 99px;
       overflow: hidden;
     }
-
+ 
     .progress-fill {
       height: 100%;
       background: linear-gradient(90deg, var(--accent), var(--green));
       border-radius: 99px;
       transition: width 0.5s ease;
     }
-
+ 
     .progress-fill.full { background: var(--green); }
-
+ 
     /* ── Cooldown Alert ── */
     .cooldown-alert {
       display: none;
@@ -498,9 +496,9 @@
       color: var(--amber);
       margin-bottom: 1rem;
     }
-
+ 
     .cooldown-alert.active { display: flex; }
-
+ 
     /* ── Info Rows ── */
     .info-grid {
       display: grid;
@@ -508,14 +506,14 @@
       gap: 0.75rem;
       margin-bottom: 1rem;
     }
-
+ 
     .info-item {
       background: var(--surface-2);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 0.9rem 1rem;
     }
-
+ 
     .info-item .info-label {
       font-size: 0.72rem;
       color: var(--text-mute);
@@ -524,18 +522,18 @@
       font-weight: 500;
       margin-bottom: 0.3rem;
     }
-
+ 
     .info-item .info-value {
       font-family: var(--mono);
       font-size: 1rem;
       font-weight: 500;
     }
-
+ 
     .info-item .info-value.green  { color: var(--green); }
     .info-item .info-value.amber  { color: var(--amber); }
     .info-item .info-value.red    { color: var(--red); }
     .info-item .info-value.accent { color: var(--accent); }
-
+ 
     /* ── Badge ── */
     .badge {
       display: inline-block;
@@ -546,12 +544,12 @@
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
-
+ 
     .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid #166534; }
     .badge-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid #713f12; }
     .badge-red   { background: var(--red-bg);   color: var(--red);   border: 1px solid #7f1d1d; }
     .badge-blue  { background: #0f2044; color: var(--accent); border: 1px solid #1e3a6e; }
-
+ 
     /* ── Note ── */
     .note {
       font-size: 0.8rem;
@@ -563,11 +561,11 @@
       margin-top: 0.75rem;
       line-height: 1.5;
     }
-
+ 
     .note strong { color: var(--text-dim); }
-
+ 
     .mono { font-family: var(--mono); }
-
+ 
     /* ── Wallet balance row ── */
     .wallet-row {
       display: flex;
@@ -581,9 +579,9 @@
       font-size: 0.85rem;
       color: var(--text-dim);
     }
-
+ 
     .wallet-row .wallet-bal { font-family: var(--mono); color: var(--text); font-weight: 500; }
-
+ 
     /* ── Toast Notifications ── */
     .toast-container {
       position: fixed;
@@ -594,7 +592,7 @@
       gap: 0.5rem;
       z-index: 999;
     }
-
+ 
     .toast {
       padding: 0.8rem 1.2rem;
       border-radius: var(--radius);
@@ -604,19 +602,19 @@
       animation: slideIn 0.25s ease;
       border: 1px solid;
     }
-
+ 
     .toast-success { background: var(--green-bg); color: var(--green);  border-color: #166534; }
     .toast-error   { background: var(--red-bg);   color: var(--red);    border-color: #7f1d1d; }
     .toast-info    { background: var(--surface-2); color: var(--text);   border-color: var(--border-hl); }
-
+ 
     @keyframes slideIn {
       from { transform: translateX(100%); opacity: 0; }
       to   { transform: translateX(0);    opacity: 1; }
     }
-
+ 
     /* ── Divider ── */
     .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
-
+ 
     /* ── Deadline badge ── */
     .deadline-pill {
       font-size: 0.72rem;
@@ -624,11 +622,11 @@
       padding: 0.1rem 0.5rem;
       border-radius: 99px;
     }
-
+ 
     .deadline-soon { background: #2a1505; color: var(--amber); border: 1px solid #713f12; }
     .deadline-ok   { background: #0f2044; color: var(--accent); border: 1px solid #1e3a6e; }
     .deadline-past { background: var(--red-bg); color: var(--red); border: 1px solid #7f1d1d; }
-
+ 
     /* ── Responsive ── */
     @media (max-width: 680px) {
       .stats { grid-template-columns: repeat(2, 1fr); }
@@ -638,7 +636,7 @@
       .stepper { padding: 1rem; }
       .step-label { font-size: 0.65rem; }
     }
-
+ 
     @media (max-width: 420px) {
       .stats { grid-template-columns: 1fr; }
     }
@@ -646,7 +644,7 @@
 </head>
 <body>
   <div class="app">
-
+ 
     <!-- ── Header ── -->
     <header class="header">
       <div class="logo">
@@ -658,7 +656,7 @@
         <span id="connectLabel">Connect Wallet</span>
       </button>
     </header>
-
+ 
     <!-- ── Login Screen ── -->
     <div class="login-screen" id="loginScreen">
       <div class="shield">🎓</div>
@@ -666,10 +664,10 @@
       <p>Connect your MetaMask wallet to view your tuition fee statement and deposit USDC into escrow.</p>
       <button class="btn-login" onclick="connectWallet()">Connect with MetaMask</button>
     </div>
-
+ 
     <!-- ── Dashboard ── -->
     <div class="dashboard" id="dashboard">
-
+ 
       <!-- Contract Paused Banner -->
       <div class="paused-banner" id="pausedBanner">
         <div class="banner-icon">🚨</div>
@@ -678,7 +676,7 @@
           <p>The administrator has paused the system. Deposits are disabled. You can withdraw your full escrow balance using the Emergency Withdraw button below.</p>
         </div>
       </div>
-
+ 
       <!-- Payment Journey Stepper -->
       <div class="stepper" id="stepper">
         <div class="step" id="step1">
@@ -696,7 +694,7 @@
           <div class="step-label">Payment Sent</div>
         </div>
       </div>
-
+ 
       <!-- Stats Row -->
       <div class="stats">
         <div class="stat-card">
@@ -720,7 +718,7 @@
           <div class="sub" id="statDateSub"></div>
         </div>
       </div>
-
+ 
       <!-- Section 1: Fee Statement -->
       <div class="section open" id="secStatement">
         <div class="section-header" onclick="toggleSection('secStatement')">
@@ -729,8 +727,7 @@
         </div>
         <div class="section-body">
           <div class="section-content">
-
-            <!-- Deposit progress bar -->
+ 
             <div class="progress-wrap">
               <div class="progress-header">
                 <span>Escrow progress toward required fees</span>
@@ -740,7 +737,7 @@
                 <div class="progress-fill" id="progressFill" style="width:0%"></div>
               </div>
             </div>
-
+ 
             <div class="info-grid">
               <div class="info-item">
                 <div class="info-label">Escrow Balance</div>
@@ -759,20 +756,20 @@
                 <div class="info-value" id="infoPayStatus">—</div>
               </div>
             </div>
-
+ 
             <div id="shortfallRow" style="display:none;" class="note">
               <strong>Shortfall:</strong> You still need to deposit
               <span id="shortfallAmount" class="mono" style="color:var(--amber);">—</span>
               USDC to meet your required fees before the deadline.
             </div>
-
+ 
             <div style="display:flex; justify-content:flex-end; margin-top:0.75rem;">
               <button class="btn btn-secondary" onclick="refreshDashboard()">↻ Refresh</button>
             </div>
           </div>
         </div>
       </div>
-
+ 
       <!-- Section 2: Deposit USDC -->
       <div class="section open" id="secDeposit">
         <div class="section-header" onclick="toggleSection('secDeposit')">
@@ -781,18 +778,17 @@
         </div>
         <div class="section-body">
           <div class="section-content">
-
+ 
             <div class="wallet-row">
               <span>Your wallet USDC balance</span>
               <span class="wallet-bal" id="infoWalletBal">—</span>
             </div>
-
-            <!-- Cooldown alert -->
+ 
             <div class="cooldown-alert" id="cooldownAlert">
               <span>⏱</span>
               <span>Deposit cooldown active — next deposit allowed in <strong id="cooldownTimer">—</strong></span>
             </div>
-
+ 
             <div class="form-row">
               <div class="form-group">
                 <label>Amount (USDC) — remaining: <span id="depositMax" class="mono">—</span></label>
@@ -801,7 +797,7 @@
               <button class="btn btn-secondary" onclick="fillMaxDeposit()" style="align-self:flex-end;">Fill Max</button>
               <button class="btn btn-primary" id="btnDeposit" onclick="deposit()">Deposit</button>
             </div>
-
+ 
             <div class="note">
               <strong>Two-step process:</strong> Clicking Deposit will first ask MetaMask to
               <strong>approve</strong> the contract to spend your USDC, then a second transaction
@@ -811,7 +807,7 @@
           </div>
         </div>
       </div>
-
+ 
       <!-- Section 3: FX Rate -->
       <div class="section" id="secFX">
         <div class="section-header" onclick="toggleSection('secFX')">
@@ -820,7 +816,7 @@
         </div>
         <div class="section-body">
           <div class="section-content">
-
+ 
             <div class="info-grid">
               <div class="info-item">
                 <div class="info-label">Locked Semester Rate</div>
@@ -839,7 +835,7 @@
                 <div class="info-value" id="infoRateAge" style="font-size:0.82rem;">—</div>
               </div>
             </div>
-
+ 
             <div class="note">
               <strong>Note:</strong> Your fee is billed in USDC at the <strong>locked semester rate</strong> set by your administrator.
               The live rate is shown for reference only. Acquire USDC via an exchange (e.g. Coinbase, Binance)
@@ -848,8 +844,8 @@
           </div>
         </div>
       </div>
-
-      <!-- Section 4: Emergency Withdraw (always present, highlighted when paused) -->
+ 
+      <!-- Section 4: Emergency Withdraw -->
       <div class="section" id="secEmergency">
         <div class="section-header" onclick="toggleSection('secEmergency')">
           <h3>🚨 Emergency Withdraw</h3>
@@ -871,27 +867,27 @@
           </div>
         </div>
       </div>
-
+ 
     </div><!-- /dashboard -->
   </div><!-- /app -->
-
+ 
   <!-- Toast container -->
   <div class="toast-container" id="toasts"></div>
-
+ 
   <script>
     // ================================================================
     //  CONFIG — Update these after running the deploy script
     // ================================================================
     const CONFIG = {
-      // After you run: npx hardhat run scripts/deploy.js --network localhost
-      // paste the printed addresses here:
-      TUITION_ADDRESS: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-      USDC_ADDRESS:    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-
-      // Hardhat local node
-      RPC_URL: "http://127.0.0.1:8545",
+      TUITION_ADDRESS: "0x00F0D684625c023ade1BD3EA4553c1F3A8D44c02",
+      USDC_ADDRESS: "0x61B231D28FA48efe5d4De20F32C60ef17Af197Eb",
+      RPC_URL: "https://rpc-amoy.polygon.technology",
+      KNOWN_STUDENTS: [],
     };
-
+ 
+    // Gas override for Amoy testnet (minimum 25 gwei required)
+    const GAS_OPTS = { gasPrice: ethers.parseUnits("35", "gwei") };
+ 
     // ================================================================
     //  ABI (only the functions we need)
     // ================================================================
@@ -911,13 +907,13 @@
       "function deposit(uint256 amount)",
       "function emergencyWithdraw()",
     ];
-
+ 
     const USDC_ABI = [
       "function balanceOf(address) view returns (uint256)",
       "function approve(address spender, uint256 amount) returns (bool)",
       "function allowance(address owner, address spender) view returns (uint256)",
     ];
-
+ 
     // ================================================================
     //  STATE
     // ================================================================
@@ -927,7 +923,7 @@
     let usdcContract      = null;
     let connectedAddress  = null;
     let cooldownInterval  = null;
-
+ 
     // ================================================================
     //  WALLET CONNECTION
     // ================================================================
@@ -936,66 +932,56 @@
         toast("MetaMask not detected. Please install it.", "error");
         return;
       }
-
+ 
       try {
         await window.ethereum.request({ method: "eth_requestAccounts" });
-
+ 
         provider = new ethers.BrowserProvider(window.ethereum);
         signer   = await provider.getSigner();
         connectedAddress = await signer.getAddress();
-
+ 
         tuitionContract = new ethers.Contract(CONFIG.TUITION_ADDRESS, TUITION_ABI, signer);
         usdcContract    = new ethers.Contract(CONFIG.USDC_ADDRESS,    USDC_ABI,    signer);
-
-        // Verify student role
+ 
         const studentRole = await tuitionContract.STUDENT_ROLE();
         const isStudent   = await tuitionContract.hasRole(studentRole, connectedAddress);
-
+ 
         if (!isStudent) {
           toast("This wallet is not registered as a student. Contact your administrator.", "error");
           return;
         }
-
-        // Update header button
+ 
         const btn = document.getElementById("btnConnect");
         btn.classList.add("connected");
         document.getElementById("connectLabel").textContent =
           connectedAddress.slice(0, 6) + "..." + connectedAddress.slice(-4);
-
+ 
         document.getElementById("loginScreen").classList.add("hidden");
         document.getElementById("dashboard").classList.add("active");
-
+ 
         toast("Connected as student", "success");
         await refreshDashboard();
-
+ 
       } catch (err) {
         console.error(err);
         toast("Connection failed: " + (err.reason || err.message), "error");
       }
     }
-
-    // Listen for account / network changes
+ 
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", () => location.reload());
       window.ethereum.on("chainChanged",    () => location.reload());
     }
-
+ 
     // ================================================================
     //  DASHBOARD REFRESH
     // ================================================================
     async function refreshDashboard() {
       if (!tuitionContract || !connectedAddress) return;
-
+ 
       try {
-        // Fetch all data in parallel for speed
         const [
-          cu,
-          fees,
-          paymentDateRaw,
-          lockedRate,
-          statusResult,
-          isPaused,
-          walletBal,
+          cu, fees, paymentDateRaw, lockedRate, statusResult, isPaused, walletBal,
         ] = await Promise.all([
           tuitionContract.creditUnits(connectedAddress),
           tuitionContract.calculateFees(connectedAddress),
@@ -1005,18 +991,15 @@
           tuitionContract.paused(),
           usdcContract.balanceOf(connectedAddress),
         ]);
-
+ 
         const [isWhitelisted, isDeposited, isPaid, balance, nextDepositAllowed] = statusResult;
-
-        // ── Paused Banner ──
+ 
+        // Paused Banner
         const banner = document.getElementById("pausedBanner");
-        if (isPaused) {
-          banner.classList.add("active");
-        } else {
-          banner.classList.remove("active");
-        }
-
-        // ── Emergency withdraw button ──
+        if (isPaused) { banner.classList.add("active"); }
+        else          { banner.classList.remove("active"); }
+ 
+        // Emergency withdraw button
         const btnEmergency  = document.getElementById("btnEmergency");
         const emergencyNote = document.getElementById("emergencyNote");
         if (isPaused) {
@@ -1028,19 +1011,18 @@
           emergencyNote.innerHTML =
             'Contract is currently <strong>active</strong> — emergency withdrawal is not available.';
         }
-
-        // ── Journey Stepper ──
+ 
+        // Journey Stepper
         updateStepper(isDeposited, isPaid);
-
-        // ── Stats Row ──
+ 
+        // Stats Row
         document.getElementById("statCU").textContent = Number(cu).toString();
         document.getElementById("statCUSub").textContent =
           "× $" + ethers.formatUnits(await tuitionContract.feePerUnit(), 6) + " / unit";
-
+ 
         document.getElementById("statFees").textContent =
           "$" + ethers.formatUnits(fees, 6);
-
-        // JPY in stats
+ 
         if (lockedRate > 0n) {
           try {
             const jpyFees = await tuitionContract.calculateFeesInJPY(connectedAddress);
@@ -1052,7 +1034,7 @@
         } else {
           document.getElementById("statJPY").textContent = "Rate not set";
         }
-
+ 
         // Payment date with countdown
         const pd = Number(paymentDateRaw);
         if (pd === 0) {
@@ -1065,7 +1047,7 @@
             month: "short", day: "numeric", year: "numeric"
           });
           document.getElementById("statDate").textContent = dateStr;
-
+ 
           if (secsLeft <= 0) {
             document.getElementById("statDate").className = "value red";
             document.getElementById("statDateSub").innerHTML =
@@ -1079,15 +1061,14 @@
               `<span class="deadline-pill ${pillClass}">${daysLeft} day${daysLeft !== 1 ? "s" : ""} left</span>`;
           }
         }
-
-        // ── Fee Statement Section ──
+ 
+        // Fee Statement Section
         const feesNum   = BigInt(fees);
         const balNum    = BigInt(balance);
         const maxDeposit = feesNum > balNum ? feesNum - balNum : 0n;
-
+ 
         window._maxDeposit = maxDeposit;
-
-        // Progress bar
+ 
         const pct = feesNum > 0n
           ? Math.min(100, Math.round(Number(balNum * 100n / feesNum)))
           : 0;
@@ -1096,12 +1077,12 @@
         fill.className   = "progress-fill" + (pct >= 100 ? " full" : "");
         document.getElementById("progressLabel").textContent =
           "$" + ethers.formatUnits(balance, 6) + " / $" + ethers.formatUnits(fees, 6);
-
+ 
         document.getElementById("infoEscrow").textContent =
           "$" + ethers.formatUnits(balance, 6);
         document.getElementById("infoOwed").textContent =
           "$" + ethers.formatUnits(fees, 6);
-
+ 
         if (isPaid) {
           document.getElementById("infoDepositStatus").innerHTML =
             '<span class="badge badge-green">✓ Paid</span>';
@@ -1125,14 +1106,13 @@
             document.getElementById("shortfallRow").style.display = "block";
           }
         }
-
-        // ── Deposit Section ──
+ 
+        // Deposit Section
         document.getElementById("depositMax").textContent =
           "$" + ethers.formatUnits(maxDeposit, 6);
         document.getElementById("infoWalletBal").textContent =
           "$" + ethers.formatUnits(walletBal, 6);
-
-        // Disable deposit button when fully deposited or paused
+ 
         const btnDeposit = document.getElementById("btnDeposit");
         btnDeposit.disabled = isPaused || maxDeposit === 0n;
         if (maxDeposit === 0n && !isPaused) {
@@ -1140,11 +1120,10 @@
         } else {
           btnDeposit.textContent = "Deposit";
         }
-
-        // Cooldown
+ 
         startCooldownTimer(Number(nextDepositAllowed));
-
-        // ── FX Rate Section ──
+ 
+        // FX Rate Section
         if (lockedRate > 0n) {
           const jpyPerUsd = Number(10n ** 8n * 10000n / lockedRate) / 10000;
           document.getElementById("infoLockedRate").textContent =
@@ -1160,7 +1139,7 @@
           document.getElementById("infoLockedRate").textContent = "Not locked yet";
           document.getElementById("infoJPY").textContent = "—";
         }
-
+ 
         // Live Chainlink rate
         try {
           const [livePrice, updatedAt] = await tuitionContract.getLatestRate();
@@ -1168,7 +1147,7 @@
           const jpyPerUsdLive = Number(1e8 * 10000 / livePriceNum) / 10000;
           document.getElementById("infoLiveRate").textContent =
             "¥" + jpyPerUsdLive.toFixed(2) + " / USD";
-
+ 
           const ageSeconds = Math.floor(Date.now() / 1000) - Number(updatedAt);
           const ageMinutes = Math.floor(ageSeconds / 60);
           document.getElementById("infoRateAge").textContent =
@@ -1177,13 +1156,13 @@
           document.getElementById("infoLiveRate").textContent = "Unavailable";
           document.getElementById("infoRateAge").textContent = "—";
         }
-
+ 
       } catch (err) {
         console.error("Dashboard refresh error:", err);
         toast("Failed to load data: " + parseError(err), "error");
       }
     }
-
+ 
     // ================================================================
     //  STEPPER
     // ================================================================
@@ -1193,11 +1172,10 @@
       const step3  = document.getElementById("step3");
       const conn1  = document.getElementById("conn1");
       const conn2  = document.getElementById("conn2");
-
-      // Step 1: always done (they connected as a whitelisted student)
+ 
       step1.className = "step done";
       step1.querySelector(".step-icon").textContent = "✓";
-
+ 
       if (isPaid) {
         conn1.className = "step-connector done";
         step2.className = "step done";
@@ -1221,20 +1199,19 @@
         step3.querySelector(".step-icon").textContent = "🏫";
       }
     }
-
+ 
     // ================================================================
     //  COOLDOWN TIMER
     // ================================================================
     function startCooldownTimer(nextAllowedTimestamp) {
-      // Clear any existing interval
       if (cooldownInterval) {
         clearInterval(cooldownInterval);
         cooldownInterval = null;
       }
-
-      const alert  = document.getElementById("cooldownAlert");
+ 
+      const alert   = document.getElementById("cooldownAlert");
       const timerEl = document.getElementById("cooldownTimer");
-
+ 
       function tick() {
         const secsLeft = nextAllowedTimestamp - Math.floor(Date.now() / 1000);
         if (secsLeft <= 0) {
@@ -1243,7 +1220,6 @@
             clearInterval(cooldownInterval);
             cooldownInterval = null;
           }
-          // Re-enable deposit button if it was disabled by cooldown
           const btn = document.getElementById("btnDeposit");
           if (btn.disabled && window._maxDeposit > 0n) {
             btn.disabled = false;
@@ -1251,18 +1227,18 @@
           }
           return;
         }
-
+ 
         alert.classList.add("active");
         document.getElementById("btnDeposit").disabled = true;
         timerEl.textContent = secsLeft + "s";
       }
-
+ 
       tick();
       if (nextAllowedTimestamp > Math.floor(Date.now() / 1000)) {
         cooldownInterval = setInterval(tick, 1000);
       }
     }
-
+ 
     // ================================================================
     //  STUDENT ACTIONS
     // ================================================================
@@ -1272,14 +1248,14 @@
           ethers.formatUnits(window._maxDeposit, 6);
       }
     }
-
+ 
     async function deposit() {
       const raw = document.getElementById("depositAmount").value.trim();
       if (!raw || isNaN(parseFloat(raw)) || parseFloat(raw) <= 0) {
         toast("Enter a valid USDC amount", "error");
         return;
       }
-
+ 
       let amount;
       try {
         amount = ethers.parseUnits(raw, 6);
@@ -1287,39 +1263,39 @@
         toast("Invalid amount format", "error");
         return;
       }
-
+ 
       const btn = document.getElementById("btnDeposit");
       btn.disabled = true;
-
+ 
       try {
         // Step 1: Approve
         toast("Step 1/2 — Approving USDC spend...", "info");
-        const approveTx = await usdcContract.approve(CONFIG.TUITION_ADDRESS, amount);
+        const approveTx = await usdcContract.approve(CONFIG.TUITION_ADDRESS, amount, GAS_OPTS);
         await approveTx.wait();
         toast("Approval confirmed. Sending deposit...", "info");
-
+ 
         // Step 2: Deposit
-        const depositTx = await tuitionContract.deposit(amount);
+        const depositTx = await tuitionContract.deposit(amount, GAS_OPTS);
         await depositTx.wait();
-
+ 
         toast("Deposit successful! Escrow updated.", "success");
         document.getElementById("depositAmount").value = "";
         await refreshDashboard();
-
+ 
       } catch (err) {
         console.error(err);
         toast("Deposit failed: " + parseError(err), "error");
         btn.disabled = false;
       }
     }
-
+ 
     async function emergencyWithdraw() {
       const btn = document.getElementById("btnEmergency");
       btn.disabled = true;
-
+ 
       try {
         toast("Submitting emergency withdrawal...", "info");
-        const tx = await tuitionContract.emergencyWithdraw();
+        const tx = await tuitionContract.emergencyWithdraw(GAS_OPTS);
         await tx.wait();
         toast("Emergency withdrawal complete. Funds returned to your wallet.", "success");
         await refreshDashboard();
@@ -1329,14 +1305,14 @@
         btn.disabled = false;
       }
     }
-
+ 
     // ================================================================
     //  UI HELPERS
     // ================================================================
     function toggleSection(id) {
       document.getElementById(id).classList.toggle("open");
     }
-
+ 
     function toast(msg, type = "info") {
       const container = document.getElementById("toasts");
       const el        = document.createElement("div");
@@ -1345,7 +1321,7 @@
       container.appendChild(el);
       setTimeout(() => el.remove(), 4500);
     }
-
+ 
     function parseError(err) {
       if (err.reason) return err.reason;
       if (err.data?.message) return err.data.message;
