@@ -10,7 +10,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+ 
     :root {
       --bg:        #0a0e17;
       --surface:   #111827;
@@ -34,9 +34,9 @@
       --sans:      'DM Sans', system-ui, sans-serif;
       --radius:    10px;
     }
-
+ 
     html { font-size: 15px; }
-
+ 
     body {
       font-family: var(--sans);
       background: var(--bg);
@@ -45,9 +45,9 @@
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
-
+ 
     .app { max-width: 980px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-
+ 
     /* ── Header ── */
     .header {
       display: flex; justify-content: space-between; align-items: center;
@@ -61,7 +61,7 @@
     }
     .logo h1 { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.3px; }
     .logo h1 span { color: var(--text-dim); font-weight: 400; margin-left: 0.3rem; }
-
+ 
     .btn-connect {
       display: flex; align-items: center; gap: 0.5rem;
       padding: 0.5rem 1rem; border-radius: var(--radius);
@@ -73,7 +73,7 @@
     .btn-connect.connected { border-color: var(--green); background: var(--green-bg); }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-mute); }
     .btn-connect.connected .dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
-
+ 
     /* ── Paused Banner ── */
     .paused-banner {
       display: none; background: var(--red-bg); border: 1px solid var(--red);
@@ -81,7 +81,7 @@
       color: var(--red); font-size: 0.85rem; font-weight: 500;
     }
     .paused-banner.show { display: block; }
-
+ 
     /* ── Login ── */
     .login-screen {
       display: flex; flex-direction: column; align-items: center;
@@ -103,11 +103,11 @@
       box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
     }
     .btn-login:hover { background: var(--accent-2); transform: translateY(-1px); }
-
+ 
     .dashboard { display: none; }
     .dashboard.active { display: block; }
     .login-screen.hidden { display: none; }
-
+ 
     /* ── Stats ── */
     .stats {
       display: grid; grid-template-columns: repeat(5, 1fr);
@@ -129,7 +129,7 @@
     .stat-card .value.amber  { color: var(--amber); }
     .stat-card .value.red    { color: var(--red); }
     .stat-card .sub { font-size: 0.7rem; color: var(--text-mute); margin-top: 0.15rem; font-family: var(--mono); }
-
+ 
     /* ── Tabs ── */
     .tabs {
       display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;
@@ -142,10 +142,10 @@
     }
     .tab:hover:not(.active) { color: var(--text); }
     .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
+ 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-
+ 
     /* ── Cards ── */
     .card {
       background: var(--surface); border: 1px solid var(--border);
@@ -158,9 +158,9 @@
     .card-header h3 { font-size: 0.88rem; font-weight: 600; }
     .card-header .hint { font-size: 0.75rem; color: var(--text-mute); font-family: var(--mono); }
     .card-body { padding: 1.2rem; }
-
+ 
     .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-
+ 
     /* ── Forms ── */
     .form-row { display: flex; gap: 0.65rem; margin-bottom: 0.75rem; align-items: flex-end; }
     .form-group { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
@@ -183,7 +183,7 @@
     .form-group input::placeholder,
     .form-group textarea::placeholder { color: var(--text-mute); }
     .form-hint { font-size: 0.7rem; color: var(--text-mute); margin-top: 0.2rem; }
-
+ 
     /* ── Buttons ── */
     .btn {
       padding: 0.55rem 1.1rem; border-radius: 7px; border: none;
@@ -201,7 +201,7 @@
     .btn-amber:hover { background: #2a1f08; }
     .btn-sm { padding: 0.28rem 0.6rem; font-size: 0.72rem; }
     .btn-row { display: flex; gap: 0.65rem; flex-wrap: wrap; }
-
+ 
     /* ── Table ── */
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
@@ -219,7 +219,7 @@
     .mono { font-family: var(--mono); }
     .addr { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); }
     .row-actions { display: flex; gap: 0.4rem; }
-
+ 
     /* ── Badges ── */
     .badge {
       display: inline-block; padding: 0.12rem 0.5rem; border-radius: 5px;
@@ -229,13 +229,13 @@
     .badge-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid #713f12; }
     .badge-red   { background: var(--red-bg);   color: var(--red);   border: 1px solid #7f1d1d; }
     .badge-blue  { background: var(--blue-dim);  color: var(--blue-text); border: 1px solid var(--border-hl); }
-
+ 
     /* ── Checkbox ── */
     input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
-
+ 
     /* ── Divider ── */
     .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
-
+ 
     /* ── Toast ── */
     .toast-container {
       position: fixed; bottom: 1.5rem; right: 1.5rem;
@@ -249,7 +249,7 @@
     .toast-error   { background: var(--red-bg);   color: var(--red);   border-color: #7f1d1d; }
     .toast-info    { background: var(--surface-2); color: var(--text);  border-color: var(--border-hl); }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
+ 
     /* ── Responsive ── */
     @media (max-width: 760px) {
       .stats      { grid-template-columns: repeat(3, 1fr); }
@@ -264,7 +264,7 @@
 </head>
 <body>
 <div class="app">
-
+ 
   <!-- Header -->
   <header class="header">
     <div class="logo">
@@ -276,13 +276,13 @@
       <span id="connectLabel">Connect Wallet</span>
     </button>
   </header>
-
+ 
   <!-- Paused Banner -->
   <div class="paused-banner" id="pausedBanner">
     ⚠️ Contract is PAUSED — Deposits and payment execution are disabled.
     Students can call emergencyWithdraw() to reclaim their escrow.
   </div>
-
+ 
   <!-- Login Screen -->
   <div class="login-screen" id="loginScreen">
     <div class="shield">🔐</div>
@@ -290,10 +290,10 @@
     <p>Connect your admin wallet to access the tuition payment management system.</p>
     <button class="btn-login" onclick="connectWallet()">Connect with MetaMask</button>
   </div>
-
+ 
   <!-- Dashboard -->
   <div class="dashboard" id="dashboard">
-
+ 
     <!-- Stats -->
     <div class="stats">
       <div class="stat-card">
@@ -319,17 +319,17 @@
         <div class="sub" id="statStatusSub"></div>
       </div>
     </div>
-
+ 
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" data-tab="Students" onclick="switchTab(this)">Students</button>
       <button class="tab" data-tab="Semester"  onclick="switchTab(this)">Semester Setup</button>
       <button class="tab" data-tab="Config"    onclick="switchTab(this)">Configuration</button>
     </div>
-
+ 
     <!-- ══════════════ Tab: Students ══════════════ -->
     <div class="tab-content active" id="tabStudents">
-
+ 
       <div class="card">
         <div class="card-header">
           <h3>Enrolled Students</h3>
@@ -361,9 +361,9 @@
           </div>
         </div>
       </div>
-
+ 
       <div class="card-grid">
-
+ 
         <!-- Whitelist -->
         <div class="card">
           <div class="card-header"><h3>Whitelist Student</h3></div>
@@ -377,9 +377,9 @@
               <input type="text" id="wlStudentId" placeholder="STU-2026-003" />
             </div>
             <button class="btn btn-primary" onclick="whitelistStudent()">Whitelist</button>
-
+ 
             <hr class="divider" />
-
+ 
             <div class="form-group" style="margin-bottom:0.75rem;">
               <label>Batch Whitelist</label>
               <textarea id="batchWlInput" placeholder="0xAbc...,STU-2026-004&#10;0xDef...,STU-2026-005"></textarea>
@@ -388,7 +388,7 @@
             <button class="btn btn-secondary" onclick="batchWhitelist()">Batch Whitelist</button>
           </div>
         </div>
-
+ 
         <!-- Set Credit Units -->
         <div class="card">
           <div class="card-header"><h3>Set Credit Units</h3></div>
@@ -402,9 +402,9 @@
               <input type="number" id="cuUnits" min="1" max="30" placeholder="4" />
             </div>
             <button class="btn btn-primary" onclick="setCreditUnits()">Assign</button>
-
+ 
             <hr class="divider" />
-
+ 
             <div class="form-group" style="margin-bottom:0.75rem;">
               <label>Batch Set CU</label>
               <textarea id="batchCuInput" placeholder="0xAbc...,4&#10;0xDef...,3"></textarea>
@@ -413,13 +413,13 @@
             <button class="btn btn-secondary" onclick="batchSetCreditUnits()">Batch Set CU</button>
           </div>
         </div>
-
+ 
       </div>
     </div>
-
+ 
     <!-- ══════════════ Tab: Semester Setup ══════════════ -->
     <div class="tab-content" id="tabSemester">
-
+ 
       <!-- Step 1: FX Rate -->
       <div class="card">
         <div class="card-header">
@@ -438,7 +438,7 @@
           </div>
         </div>
       </div>
-
+ 
       <!-- Step 2: Payment Date -->
       <div class="card">
         <div class="card-header">
@@ -455,7 +455,7 @@
           </div>
         </div>
       </div>
-
+ 
       <!-- Step 3: Execute Payment -->
       <div class="card">
         <div class="card-header">
@@ -495,7 +495,7 @@
           </div>
         </div>
       </div>
-
+ 
       <!-- Step 4: New Semester -->
       <div class="card">
         <div class="card-header">
@@ -511,12 +511,12 @@
           <button class="btn btn-amber" onclick="resetSemester()">Reset Semester</button>
         </div>
       </div>
-
+ 
     </div>
-
+ 
     <!-- ══════════════ Tab: Configuration ══════════════ -->
     <div class="tab-content" id="tabConfig">
-
+ 
       <!-- Financial -->
       <div class="card">
         <div class="card-header"><h3>Financial Settings</h3></div>
@@ -531,7 +531,7 @@
           </div>
         </div>
       </div>
-
+ 
       <!-- Addresses -->
       <div class="card">
         <div class="card-header"><h3>Contract Addresses</h3></div>
@@ -553,7 +553,7 @@
           </div>
         </div>
       </div>
-
+ 
       <!-- Emergency -->
       <div class="card">
         <div class="card-header"><h3>Emergency Controls</h3></div>
@@ -570,40 +570,35 @@
           </div>
         </div>
       </div>
-
+ 
     </div>
-
+ 
   </div><!-- /dashboard -->
 </div><!-- /app -->
-
+ 
 <div class="toast-container" id="toasts"></div>
-
+ 
 <script>
   // ════════════════════════════════════════════════════════
   //  CONFIG — update after each deploy
   // ════════════════════════════════════════════════════════
   const CONFIG = {
-    TUITION_ADDRESS: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-    USDC_ADDRESS:    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    RPC_URL:         "http://127.0.0.1:8545",
-
-    // Pre-seeded on first load (only used when localStorage is empty for this contract).
-    // Update if you redeploy — these are the default Hardhat accounts #1 and #2.
-    INITIAL_STUDENTS: [
-      "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-      "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
-    ],
+    TUITION_ADDRESS: "0x00F0D684625c023ade1BD3EA4553c1F3A8D44c02",
+    USDC_ADDRESS: "0x61B231D28FA48efe5d4De20F32C60ef17Af197Eb",
+    RPC_URL: "https://rpc-amoy.polygon.technology",
+    INITIAL_STUDENTS: [],
   };
-
+ 
+  // Gas override for Amoy testnet (minimum 25 gwei required)
+  const GAS_OPTS = { gasPrice: ethers.parseUnits("35", "gwei") };
+ 
   // ════════════════════════════════════════════════════════
   //  ABI
   // ════════════════════════════════════════════════════════
   const TUITION_ABI = [
-    // Roles
     "function ADMIN_ROLE() view returns (bytes32)",
     "function STUDENT_ROLE() view returns (bytes32)",
     "function hasRole(bytes32 role, address account) view returns (bool)",
-    // State getters
     "function feePerUnit() view returns (uint256)",
     "function paymentDate() view returns (uint256)",
     "function lockedFxRate() view returns (uint256)",
@@ -612,36 +607,31 @@
     "function paymentsExecutedThisSemester() view returns (bool)",
     "function escrowBalance(address) view returns (uint256)",
     "function creditUnits(address) view returns (uint256)",
-    // View helpers
     "function calculateFees(address student) view returns (uint256)",
     "function calculateFeesInJPY(address student) view returns (uint256)",
     "function getStatus(address student) view returns (bool isWhitelisted, bool isDeposited, bool isPaid, uint256 balance, uint256 nextDepositAllowed)",
-    // Student management
     "function whitelistStudent(address student, bytes32 studentHash)",
     "function batchWhitelist(address[] students, bytes32[] hashes)",
     "function removeStudent(address student)",
     "function setCreditUnits(address student, uint256 units)",
     "function batchSetCreditUnits(address[] students, uint256[] units)",
     "function refundStudent(address student)",
-    // Semester
     "function setPaymentDate(uint256 _date)",
     "function lockFxRate()",
     "function resetLockedFxRate()",
     "function executePayment(address[] students)",
     "function batchResetPayments(address[] students)",
-    // Configuration
     "function setFeePerUnit(uint256 _newFee)",
     "function setUniversityWallet(address _newWallet)",
     "function setPriceFeed(address _newFeed)",
-    // Emergency
     "function pause()",
     "function unpause()",
   ];
-
+ 
   const USDC_ABI = [
     "function balanceOf(address) view returns (uint256)",
   ];
-
+ 
   // ════════════════════════════════════════════════════════
   //  STATE
   // ════════════════════════════════════════════════════════
@@ -650,9 +640,9 @@
   let tuitionContract = null;
   let usdcContract    = null;
   let connectedAddress = null;
-
+ 
   const STORAGE_KEY = `tuitionpay_students_${CONFIG.TUITION_ADDRESS.toLowerCase()}`;
-
+ 
   function loadStudents() {
     try {
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
@@ -663,11 +653,11 @@
       return stored;
     } catch { return []; }
   }
-
+ 
   function saveStudents(list) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   }
-
+ 
   function addStudentToList(addr) {
     const list = loadStudents();
     if (!list.map(a => a.toLowerCase()).includes(addr.toLowerCase())) {
@@ -675,12 +665,12 @@
       saveStudents(list);
     }
   }
-
+ 
   function removeStudentFromList(addr) {
     const list = loadStudents().filter(a => a.toLowerCase() !== addr.toLowerCase());
     saveStudents(list);
   }
-
+ 
   // ════════════════════════════════════════════════════════
   //  WALLET
   // ════════════════════════════════════════════════════════
@@ -691,25 +681,24 @@
       provider        = new ethers.BrowserProvider(window.ethereum);
       signer          = await provider.getSigner();
       connectedAddress = await signer.getAddress();
-
+ 
       tuitionContract = new ethers.Contract(CONFIG.TUITION_ADDRESS, TUITION_ABI, signer);
       usdcContract    = new ethers.Contract(CONFIG.USDC_ADDRESS, USDC_ABI, provider);
-
+ 
       const adminRole = await tuitionContract.ADMIN_ROLE();
       const isAdmin   = await tuitionContract.hasRole(adminRole, connectedAddress);
       if (!isAdmin) {
         toast("Connected wallet does not have ADMIN_ROLE.", "error");
         return;
       }
-
+ 
       const btn = document.getElementById("btnConnect");
       btn.classList.add("connected");
-      document.getElementById("connectLabel").textContent =
-        fmtAddr(connectedAddress);
-
+      document.getElementById("connectLabel").textContent = fmtAddr(connectedAddress);
+ 
       document.getElementById("loginScreen").classList.add("hidden");
       document.getElementById("dashboard").classList.add("active");
-
+ 
       toast("Connected as admin", "success");
       await refreshDashboard();
     } catch (err) {
@@ -717,12 +706,12 @@
       toast("Connection failed: " + parseError(err), "error");
     }
   }
-
+ 
   if (window.ethereum) {
     window.ethereum.on("accountsChanged", () => location.reload());
     window.ethereum.on("chainChanged",    () => location.reload());
   }
-
+ 
   // ════════════════════════════════════════════════════════
   //  TABS
   // ════════════════════════════════════════════════════════
@@ -732,7 +721,7 @@
     el.classList.add("active");
     document.getElementById("tab" + el.dataset.tab).classList.add("active");
   }
-
+ 
   // ════════════════════════════════════════════════════════
   //  DASHBOARD
   // ════════════════════════════════════════════════════════
@@ -740,7 +729,7 @@
     if (!tuitionContract) return;
     await Promise.all([refreshStats(), refreshStudentTable()]);
   }
-
+ 
   async function refreshStats() {
     try {
       const [feeRaw, pdRaw, fxRaw, usdcBal, isPaused, semExec, uniWallet] = await Promise.all([
@@ -752,20 +741,17 @@
         tuitionContract.paymentsExecutedThisSemester(),
         tuitionContract.universityWallet(),
       ]);
-
-      // Fee
+ 
       document.getElementById("statFee").textContent =
         "$" + Number(ethers.formatUnits(feeRaw, 6)).toLocaleString();
-
-      // Payment date
+ 
       const pd = Number(pdRaw);
       const dateEl = document.getElementById("statDate");
       dateEl.textContent = pd === 0 ? "Not set" : new Date(pd * 1000).toLocaleDateString();
       dateEl.className   = "value " + (pd === 0 ? "amber" : "");
       document.getElementById("paymentDateDisplay").textContent =
         pd === 0 ? "Not set" : new Date(pd * 1000).toLocaleString();
-
-      // FX Rate
+ 
       const fx = Number(fxRaw);
       const fxEl    = document.getElementById("statFx");
       const fxSubEl = document.getElementById("statFxSub");
@@ -782,12 +768,10 @@
         fxSubEl.textContent = "per $1 USDC";
         fxDisplayEl.textContent = `¥${Number(jpyPerUsd).toLocaleString()} / $1`;
       }
-
-      // Escrow balance
+ 
       document.getElementById("statBalance").textContent =
         "$" + Number(ethers.formatUnits(usdcBal, 6)).toLocaleString();
-
-      // Contract status
+ 
       const statusEl    = document.getElementById("statStatus");
       const statusSubEl = document.getElementById("statStatusSub");
       const banner      = document.getElementById("pausedBanner");
@@ -807,18 +791,17 @@
         statusSubEl.textContent = "";
         banner.classList.remove("show");
       }
-
-      // Config tab
+ 
       document.getElementById("cfgFeeDisplay").textContent =
         "$" + Number(ethers.formatUnits(feeRaw, 6)).toLocaleString() + " USDC";
       document.getElementById("cfgUniWalletDisplay").textContent =
         uniWallet.slice(0, 8) + "..." + uniWallet.slice(-6);
-
+ 
     } catch (err) {
       console.error("Stats error:", err);
     }
   }
-
+ 
   async function refreshStudentTable() {
     const students = loadStudents();
     await Promise.all([
@@ -826,7 +809,7 @@
       renderExecTable(students),
     ]);
   }
-
+ 
   async function renderStudentTable(students) {
     const tbody = document.getElementById("studentTableBody");
     if (students.length === 0) {
@@ -834,10 +817,10 @@
         No students registered. Whitelist students below.</td></tr>`;
       return;
     }
-
+ 
     const fxRaw    = await tuitionContract.lockedFxRate();
     const fxLocked = Number(fxRaw) > 0;
-
+ 
     let rows = "";
     for (let i = 0; i < students.length; i++) {
       const addr = students[i];
@@ -849,25 +832,25 @@
         ]);
         const [, isDeposited, isPaid, escrow] = status;
         const cuNum = Number(cu);
-
+ 
         let jpyStr = "—";
         if (fxLocked && cuNum > 0) {
           try {
             const jpy = await tuitionContract.calculateFeesInJPY(addr);
             jpyStr = "¥" + Number(jpy).toLocaleString();
-          } catch { /* FX locked but call failed — show dash */ }
+          } catch {}
         }
-
+ 
         let badge;
         if (isPaid)           badge = `<span class="badge badge-green">Paid</span>`;
         else if (cuNum === 0) badge = `<span class="badge badge-red">No CU</span>`;
         else if (isDeposited) badge = `<span class="badge badge-blue">Ready</span>`;
         else                  badge = `<span class="badge badge-amber">Pending</span>`;
-
+ 
         const hasEscrow = Number(escrow) > 0;
         const owedFmt   = "$" + Number(ethers.formatUnits(owed,   6)).toLocaleString();
         const escrowFmt = "$" + Number(ethers.formatUnits(escrow, 6)).toLocaleString();
-
+ 
         rows += `
           <tr>
             <td class="mono" style="color:var(--text-mute)">${i + 1}</td>
@@ -906,7 +889,7 @@
     }
     tbody.innerHTML = rows;
   }
-
+ 
   async function renderExecTable(students) {
     const tbody = document.getElementById("execTableBody");
     if (students.length === 0) {
@@ -925,13 +908,13 @@
         const [, isDeposited, isPaid, escrow] = status;
         const cuNum    = Number(cu);
         const eligible = isDeposited && !isPaid;
-
+ 
         let badge;
         if (isPaid)           badge = `<span class="badge badge-green">Paid</span>`;
         else if (cuNum === 0) badge = `<span class="badge badge-red">No CU</span>`;
         else if (isDeposited) badge = `<span class="badge badge-blue">Ready</span>`;
         else                  badge = `<span class="badge badge-amber">Pending</span>`;
-
+ 
         rows += `
           <tr>
             <td><input type="checkbox" class="exec-cb" value="${addr}" ${eligible ? "" : "disabled"} /></td>
@@ -952,7 +935,7 @@
     }
     tbody.innerHTML = rows;
   }
-
+ 
   // ════════════════════════════════════════════════════════
   //  STUDENT MANAGEMENT
   // ════════════════════════════════════════════════════════
@@ -964,7 +947,7 @@
     try {
       toast("Submitting...", "info");
       const hash = ethers.keccak256(ethers.solidityPacked(["string"], [studentId]));
-      const tx   = await tuitionContract.whitelistStudent(addr, hash);
+      const tx   = await tuitionContract.whitelistStudent(addr, hash, GAS_OPTS);
       await tx.wait();
       addStudentToList(addr);
       document.getElementById("wlAddress").value   = "";
@@ -973,7 +956,7 @@
       await refreshDashboard();
     } catch (err) { toast("Failed: " + parseError(err), "error"); }
   }
-
+ 
   async function batchWhitelist() {
     const raw = document.getElementById("batchWlInput").value.trim();
     if (!raw) { toast("Input is empty", "error"); return; }
@@ -988,7 +971,7 @@
     }
     try {
       toast(`Whitelisting ${students.length} students...`, "info");
-      const tx = await tuitionContract.batchWhitelist(students, hashes);
+      const tx = await tuitionContract.batchWhitelist(students, hashes, GAS_OPTS);
       await tx.wait();
       students.forEach(addStudentToList);
       document.getElementById("batchWlInput").value = "";
@@ -996,7 +979,7 @@
       await refreshDashboard();
     } catch (err) { toast("Batch whitelist failed: " + parseError(err), "error"); }
   }
-
+ 
   async function removeStudentAction(addr) {
     let msg = `Remove student ${fmtAddr(addr)}?\n\nThis revokes their STUDENT_ROLE and clears their data.`;
     try {
@@ -1010,14 +993,14 @@
     if (!confirm(msg)) return;
     try {
       toast("Removing student...", "info");
-      const tx = await tuitionContract.removeStudent(addr);
+      const tx = await tuitionContract.removeStudent(addr, GAS_OPTS);
       await tx.wait();
       removeStudentFromList(addr);
       toast("Student removed", "success");
       await refreshDashboard();
     } catch (err) { toast("Remove failed: " + parseError(err), "error"); }
   }
-
+ 
   async function setCreditUnits() {
     const addr  = document.getElementById("cuAddress").value.trim();
     const units = parseInt(document.getElementById("cuUnits").value);
@@ -1025,7 +1008,7 @@
     if (isNaN(units) || units < 1 || units > 30)     { toast("Units must be 1–30", "error"); return; }
     try {
       toast("Assigning credit units...", "info");
-      const tx = await tuitionContract.setCreditUnits(addr, units);
+      const tx = await tuitionContract.setCreditUnits(addr, units, GAS_OPTS);
       await tx.wait();
       document.getElementById("cuAddress").value = "";
       document.getElementById("cuUnits").value   = "";
@@ -1033,7 +1016,7 @@
       await refreshDashboard();
     } catch (err) { toast("Failed: " + parseError(err), "error"); }
   }
-
+ 
   async function batchSetCreditUnits() {
     const raw = document.getElementById("batchCuInput").value.trim();
     if (!raw) { toast("Input is empty", "error"); return; }
@@ -1049,27 +1032,27 @@
     }
     try {
       toast(`Setting CU for ${students.length} students...`, "info");
-      const tx = await tuitionContract.batchSetCreditUnits(students, units);
+      const tx = await tuitionContract.batchSetCreditUnits(students, units, GAS_OPTS);
       await tx.wait();
       document.getElementById("batchCuInput").value = "";
       toast(`Credit units set for ${students.length} students`, "success");
       await refreshDashboard();
     } catch (err) { toast("Batch CU failed: " + parseError(err), "error"); }
   }
-
+ 
   async function refundStudentAction(addr) {
     try {
       const escrow = await tuitionContract.escrowBalance(addr);
       const amt    = Number(ethers.formatUnits(escrow, 6));
       if (!confirm(`Refund $${amt.toFixed(2)} USDC to ${fmtAddr(addr)}?`)) return;
       toast("Processing refund...", "info");
-      const tx = await tuitionContract.refundStudent(addr);
+      const tx = await tuitionContract.refundStudent(addr, GAS_OPTS);
       await tx.wait();
       toast(`Refunded $${amt.toFixed(2)} to ${fmtAddr(addr)}`, "success");
       await refreshDashboard();
     } catch (err) { toast("Refund failed: " + parseError(err), "error"); }
   }
-
+ 
   // ════════════════════════════════════════════════════════
   //  SEMESTER SETUP
   // ════════════════════════════════════════════════════════
@@ -1077,24 +1060,24 @@
     if (!confirm("Lock the current Chainlink JPY/USD rate for this semester?")) return;
     try {
       toast("Locking FX rate...", "info");
-      const tx = await tuitionContract.lockFxRate();
+      const tx = await tuitionContract.lockFxRate(GAS_OPTS);
       await tx.wait();
       toast("FX rate locked", "success");
       await refreshStats();
     } catch (err) { toast("Lock failed: " + parseError(err), "error"); }
   }
-
+ 
   async function resetFxRate() {
     if (!confirm("Reset the locked FX rate?\n\nStudents will not see JPY fees until you lock a new rate.")) return;
     try {
       toast("Resetting FX rate...", "info");
-      const tx = await tuitionContract.resetLockedFxRate();
+      const tx = await tuitionContract.resetLockedFxRate(GAS_OPTS);
       await tx.wait();
       toast("FX rate cleared", "success");
       await refreshStats();
     } catch (err) { toast("Reset failed: " + parseError(err), "error"); }
   }
-
+ 
   async function setPaymentDate() {
     const dateStr = document.getElementById("pdDate").value;
     if (!dateStr) { toast("Select a date and time", "error"); return; }
@@ -1106,14 +1089,14 @@
     }
     try {
       toast("Setting payment date...", "info");
-      const tx = await tuitionContract.setPaymentDate(timestamp);
+      const tx = await tuitionContract.setPaymentDate(timestamp, GAS_OPTS);
       await tx.wait();
       document.getElementById("pdDate").value = "";
       toast("Payment date set: " + new Date(dateStr).toLocaleString(), "success");
       await refreshStats();
     } catch (err) { toast("Failed: " + parseError(err), "error"); }
   }
-
+ 
   async function executePayment() {
     const checked   = document.querySelectorAll(".exec-cb:checked");
     const addresses = Array.from(checked).map(cb => cb.value);
@@ -1121,26 +1104,26 @@
     if (!confirm(`Execute payment for ${addresses.length} student(s)?`)) return;
     try {
       toast(`Executing payment for ${addresses.length} student(s)...`, "info");
-      const tx = await tuitionContract.executePayment(addresses);
+      const tx = await tuitionContract.executePayment(addresses, GAS_OPTS);
       await tx.wait();
       toast("Payment executed", "success");
       await refreshDashboard();
     } catch (err) { toast("Payment failed: " + parseError(err), "error"); }
   }
-
+ 
   async function resetSemester() {
     const students = loadStudents();
     if (students.length === 0) { toast("No students to reset", "error"); return; }
     if (!confirm(`Reset semester for ${students.length} student(s)?\n\nThis clears all payment statuses and allows setting a new payment date.`)) return;
     try {
       toast("Resetting semester...", "info");
-      const tx = await tuitionContract.batchResetPayments(students);
+      const tx = await tuitionContract.batchResetPayments(students, GAS_OPTS);
       await tx.wait();
       toast("Semester reset — you can now set a new payment date", "success");
       await refreshDashboard();
     } catch (err) { toast("Reset failed: " + parseError(err), "error"); }
   }
-
+ 
   // ════════════════════════════════════════════════════════
   //  CONFIGURATION
   // ════════════════════════════════════════════════════════
@@ -1151,63 +1134,63 @@
     if (!confirm(`Set fee per credit unit to $${val.toLocaleString()} USDC?`)) return;
     try {
       toast("Updating fee...", "info");
-      const tx = await tuitionContract.setFeePerUnit(raw);
+      const tx = await tuitionContract.setFeePerUnit(raw, GAS_OPTS);
       await tx.wait();
       document.getElementById("cfgFee").value = "";
       toast(`Fee updated to $${val.toLocaleString()} per CU`, "success");
       await refreshStats();
     } catch (err) { toast("Failed: " + parseError(err), "error"); }
   }
-
+ 
   async function setUniversityWallet() {
     const addr = document.getElementById("cfgUniWallet").value.trim();
     if (!ethers.isAddress(addr)) { toast("Invalid address", "error"); return; }
     if (!confirm(`Update university wallet to ${fmtAddr(addr)}?`)) return;
     try {
       toast("Updating wallet...", "info");
-      const tx = await tuitionContract.setUniversityWallet(addr);
+      const tx = await tuitionContract.setUniversityWallet(addr, GAS_OPTS);
       await tx.wait();
       document.getElementById("cfgUniWallet").value = "";
       toast("University wallet updated", "success");
       await refreshStats();
     } catch (err) { toast("Failed: " + parseError(err), "error"); }
   }
-
+ 
   async function setPriceFeed() {
     const addr = document.getElementById("cfgPriceFeed").value.trim();
     if (!ethers.isAddress(addr)) { toast("Invalid address", "error"); return; }
     if (!confirm(`Update price feed to ${fmtAddr(addr)}?\n\nMust be a JPY/USD Chainlink feed.`)) return;
     try {
       toast("Updating price feed...", "info");
-      const tx = await tuitionContract.setPriceFeed(addr);
+      const tx = await tuitionContract.setPriceFeed(addr, GAS_OPTS);
       await tx.wait();
       document.getElementById("cfgPriceFeed").value = "";
       toast("Price feed updated", "success");
     } catch (err) { toast("Failed: " + parseError(err), "error"); }
   }
-
+ 
   async function pauseContract() {
     if (!confirm("Pause the contract?\n\nDeposits and payments will be disabled. Students can emergency withdraw.")) return;
     try {
       toast("Pausing contract...", "info");
-      const tx = await tuitionContract.pause();
+      const tx = await tuitionContract.pause(GAS_OPTS);
       await tx.wait();
       toast("Contract paused", "success");
       await refreshStats();
     } catch (err) { toast("Failed: " + parseError(err), "error"); }
   }
-
+ 
   async function unpauseContract() {
     if (!confirm("Unpause the contract?")) return;
     try {
       toast("Unpausing contract...", "info");
-      const tx = await tuitionContract.unpause();
+      const tx = await tuitionContract.unpause(GAS_OPTS);
       await tx.wait();
       toast("Contract unpaused", "success");
       await refreshStats();
     } catch (err) { toast("Failed: " + parseError(err), "error"); }
   }
-
+ 
   // ════════════════════════════════════════════════════════
   //  HELPERS
   // ════════════════════════════════════════════════════════
@@ -1215,11 +1198,11 @@
     const checked = document.getElementById("selectAllExec").checked;
     document.querySelectorAll(".exec-cb:not(:disabled)").forEach(cb => cb.checked = checked);
   }
-
+ 
   function fmtAddr(addr) {
     return addr.slice(0, 6) + "..." + addr.slice(-4);
   }
-
+ 
   function toast(msg, type = "info") {
     const container = document.getElementById("toasts");
     const el = document.createElement("div");
@@ -1228,7 +1211,7 @@
     container.appendChild(el);
     setTimeout(() => el.remove(), 4000);
   }
-
+ 
   function parseError(err) {
     if (err.reason)               return err.reason;
     if (err.shortMessage)         return err.shortMessage;
